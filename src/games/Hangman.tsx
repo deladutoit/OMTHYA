@@ -15,6 +15,11 @@ const MAX_WRONG = 6
 const WORDS_PER_ROUND = 8
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
+const BALLOON_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e', '#a855f7', '#f97316']
+const CX = [28, 78, 128, 178, 228, 278]
+const CY = 40
+const R  = 22
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -25,54 +30,52 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 // ---------------------------------------------------------------------------
-// SVG Hangman drawing — builds progressively with wrong guesses
+// Balloon row — pops left-to-right as wrong guesses accumulate
 // ---------------------------------------------------------------------------
-function HangmanDrawing({ wrongCount }: { wrongCount: number }) {
-  const dead = wrongCount >= MAX_WRONG
-  const bodyColor = dead ? '#ef4444' : '#3b82f6'
-
+function BalloonDisplay({ wrongCount }: { wrongCount: number }) {
   return (
-    <svg viewBox="0 0 200 210" className="w-40 h-40 sm:w-48 sm:h-48">
-      {/* Gallows */}
-      <line x1="20" y1="190" x2="180" y2="190" stroke="#374151" strokeWidth="5" strokeLinecap="round" />
-      <line x1="60" y1="190" x2="60" y2="15"  stroke="#374151" strokeWidth="5" strokeLinecap="round" />
-      <line x1="60" y1="15"  x2="135" y2="15" stroke="#374151" strokeWidth="5" strokeLinecap="round" />
-      <line x1="135" y1="15" x2="135" y2="42" stroke="#374151" strokeWidth="3" strokeLinecap="round" />
+    <svg viewBox="0 0 306 115" className="w-full max-w-sm mx-auto">
+      {CX.map((cx, i) => {
+        const popped = i < wrongCount
+        const color  = BALLOON_COLORS[i]
 
-      {/* Head */}
-      {wrongCount >= 1 && (
-        <circle cx="135" cy="58" r="16" stroke={bodyColor} strokeWidth="3" fill="none" />
-      )}
-      {/* Body */}
-      {wrongCount >= 2 && (
-        <line x1="135" y1="74" x2="135" y2="132" stroke={bodyColor} strokeWidth="3" strokeLinecap="round" />
-      )}
-      {/* Left arm */}
-      {wrongCount >= 3 && (
-        <line x1="135" y1="90" x2="112" y2="114" stroke={bodyColor} strokeWidth="3" strokeLinecap="round" />
-      )}
-      {/* Right arm */}
-      {wrongCount >= 4 && (
-        <line x1="135" y1="90" x2="158" y2="114" stroke={bodyColor} strokeWidth="3" strokeLinecap="round" />
-      )}
-      {/* Left leg */}
-      {wrongCount >= 5 && (
-        <line x1="135" y1="132" x2="112" y2="162" stroke={bodyColor} strokeWidth="3" strokeLinecap="round" />
-      )}
-      {/* Right leg */}
-      {wrongCount >= 6 && (
-        <line x1="135" y1="132" x2="158" y2="162" stroke={bodyColor} strokeWidth="3" strokeLinecap="round" />
-      )}
+        if (popped) {
+          return (
+            <g key={i} opacity="0.45">
+              {/* Burst cross */}
+              <line x1={cx - 11} y1={CY - 11} x2={cx + 11} y2={CY + 11} stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1={cx + 11} y1={CY - 11} x2={cx - 11} y2={CY + 11} stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1={cx - 13} y1={CY} x2={cx + 13} y2={CY} stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1={cx} y1={CY - 13} x2={cx} y2={CY + 13} stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" />
+              {/* Limp string */}
+              <path d={`M${cx} ${CY + 8} Q${cx + 6} ${CY + 40} ${cx - 2} ${CY + 70}`} fill="none" stroke="#d1d5db" strokeWidth="1.5" />
+            </g>
+          )
+        }
 
-      {/* X eyes when dead */}
-      {dead && (
-        <>
-          <line x1="128" y1="52" x2="132" y2="56" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-          <line x1="132" y1="52" x2="128" y2="56" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-          <line x1="138" y1="52" x2="142" y2="56" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-          <line x1="142" y1="52" x2="138" y2="56" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-        </>
-      )}
+        return (
+          <g key={i}>
+            {/* Shadow */}
+            <ellipse cx={cx} cy={CY + R + 2} rx={R * 0.7} ry={4} fill="rgba(0,0,0,0.08)" />
+            {/* Balloon body */}
+            <circle cx={cx} cy={CY} r={R} fill={color} />
+            {/* Shine highlight */}
+            <circle cx={cx - 7} cy={CY - 8} r={6} fill="white" opacity="0.3" />
+            {/* Knot */}
+            <polygon
+              points={`${cx},${CY + R} ${cx - 3},${CY + R + 7} ${cx + 3},${CY + R + 7}`}
+              fill={color}
+            />
+            {/* String */}
+            <path
+              d={`M${cx} ${CY + R + 7} Q${cx + 5} ${CY + R + 35} ${cx - 2} ${CY + R + 62}`}
+              fill="none"
+              stroke="#9ca3af"
+              strokeWidth="1.5"
+            />
+          </g>
+        )
+      })}
     </svg>
   )
 }
@@ -85,17 +88,17 @@ export function Hangman({ language, onComplete, onBack }: Props) {
     shuffle(getScrambleWords('teen')).slice(0, WORDS_PER_ROUND),
   )
   const [wordIndex, setWordIndex] = useState(0)
-  const [guessed, setGuessed] = useState<Set<string>>(new Set())
+  const [guessed, setGuessed]     = useState<Set<string>>(new Set())
   const [wrongCount, setWrongCount] = useState(0)
   const [wordResult, setWordResult] = useState<'won' | 'lost' | null>(null)
-  const [score, setScore] = useState(0)
-  const [done, setDone] = useState(false)
+  const [score, setScore]         = useState(0)
+  const [done, setDone]           = useState(false)
   const advancing = useRef(false)
 
-  const current = words[wordIndex]
-  const word = current.word
+  const current      = words[wordIndex]
+  const word         = current.word
   const lettersInWord = new Set(word.split(''))
-  const allRevealed = [...lettersInWord].every((l) => guessed.has(l))
+  const allRevealed  = [...lettersInWord].every((l) => guessed.has(l))
 
   // Detect win / lose
   useEffect(() => {
@@ -105,7 +108,7 @@ export function Hangman({ language, onComplete, onBack }: Props) {
       const pts = Math.max(0, 10 - wrongCount)
       setScore((s) => s + pts)
       setWordResult('won')
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.5 } })
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } })
     } else if (wrongCount >= MAX_WRONG) {
       setWordResult('lost')
     }
@@ -162,7 +165,7 @@ export function Hangman({ language, onComplete, onBack }: Props) {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-gray-200 flex items-center justify-center p-8">
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100 flex items-center justify-center p-8">
         <div className="bg-white rounded-3xl shadow-2xl p-12 w-full max-w-lg text-center">
           <p className="text-7xl mb-4">{pct >= 70 ? '🌟' : pct >= 40 ? '🎉' : '💪'}</p>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
@@ -192,7 +195,7 @@ export function Hangman({ language, onComplete, onBack }: Props) {
             </button>
             <button
               onClick={() => onComplete(Math.max(10, pct))}
-              className="flex-1 bg-slate-700 hover:bg-slate-800 text-white text-xl font-semibold py-4 rounded-2xl transition-colors"
+              className="flex-1 bg-sky-600 hover:bg-sky-700 text-white text-xl font-semibold py-4 rounded-2xl transition-colors"
             >
               {t(language, 'continueBtn')}
             </button>
@@ -202,10 +205,10 @@ export function Hangman({ language, onComplete, onBack }: Props) {
     )
   }
 
-  const remainingGuesses = MAX_WRONG - wrongCount
+  const remaining = MAX_WRONG - wrongCount
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-gray-200 flex flex-col p-4">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100 flex flex-col p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3 max-w-2xl mx-auto w-full">
         <button
@@ -221,36 +224,29 @@ export function Hangman({ language, onComplete, onBack }: Props) {
       </div>
 
       <div className="flex-1 flex flex-col items-center gap-4 max-w-2xl mx-auto w-full">
-        {/* Drawing + stats row */}
-        <div className="flex items-center justify-between w-full bg-white rounded-3xl shadow px-6 py-4">
-          <HangmanDrawing wrongCount={wrongCount} />
-
-          <div className="flex flex-col items-center gap-3 flex-1">
-            {/* Wrong guesses remaining */}
-            <div
-              className={`text-5xl font-black tabular-nums ${
-                remainingGuesses <= 2 ? 'text-red-500 animate-pulse' : 'text-gray-700'
-              }`}
-            >
-              {remainingGuesses}
-            </div>
-            <p className="text-sm text-gray-400 font-medium uppercase tracking-wide">
-              {remainingGuesses === 1 ? 'guess left' : 'guesses left'}
-            </p>
-
-            {/* Wrong letter chips */}
-            <div className="flex flex-wrap justify-center gap-1 max-w-[160px]">
+        {/* Balloon display card */}
+        <div className="w-full bg-white rounded-3xl shadow px-4 pt-4 pb-2">
+          <BalloonDisplay wrongCount={wrongCount} />
+          <div className="flex items-center justify-between px-2 pb-1 mt-1">
+            <div className="flex flex-wrap gap-1">
               {[...guessed]
                 .filter((l) => !lettersInWord.has(l))
                 .map((l) => (
                   <span
                     key={l}
-                    className="inline-block bg-red-100 text-red-500 text-sm font-bold rounded-lg px-2 py-0.5"
+                    className="inline-block bg-red-100 text-red-400 text-xs font-bold rounded-lg px-2 py-0.5"
                   >
                     {l}
                   </span>
                 ))}
             </div>
+            <span
+              className={`text-lg font-bold tabular-nums ${
+                remaining <= 2 ? 'text-red-500 animate-pulse' : 'text-gray-500'
+              }`}
+            >
+              {remaining} 🎈 left
+            </span>
           </div>
         </div>
 
@@ -263,25 +259,21 @@ export function Hangman({ language, onComplete, onBack }: Props) {
         <div className="flex flex-wrap justify-center gap-2 w-full">
           {word.split('').map((letter, i) => {
             const revealed = guessed.has(letter)
-            const showRed = wordResult === 'lost' && !revealed
+            const showRed  = wordResult === 'lost' && !revealed
             return (
               <div
                 key={i}
                 className={`w-11 h-12 flex items-end justify-center border-b-4 transition-colors ${
-                  showRed
-                    ? 'border-red-400'
-                    : revealed
-                    ? 'border-green-400'
-                    : 'border-gray-400'
+                  showRed    ? 'border-red-400'
+                  : revealed ? 'border-green-400'
+                             : 'border-gray-400'
                 }`}
               >
                 <span
                   className={`text-2xl font-bold mb-0.5 ${
-                    showRed
-                      ? 'text-red-500'
-                      : revealed
-                      ? 'text-gray-800'
-                      : 'text-transparent'
+                    showRed    ? 'text-red-500'
+                    : revealed ? 'text-gray-800'
+                               : 'text-transparent'
                   }`}
                 >
                   {letter}
@@ -301,8 +293,8 @@ export function Hangman({ language, onComplete, onBack }: Props) {
             }`}
           >
             {wordResult === 'won'
-              ? `✅ +${Math.max(0, 10 - wrongCount)} points!`
-              : `💀 The word was: ${word}`}
+              ? `🎈 +${Math.max(0, 10 - wrongCount)} points!`
+              : `💨 All popped! The word was: ${word}`}
           </div>
         )}
 
@@ -325,7 +317,7 @@ export function Hangman({ language, onComplete, onBack }: Props) {
                     ? 'bg-red-100 text-red-300 line-through'
                     : wordResult !== null
                     ? 'bg-gray-100 text-gray-300'
-                    : 'bg-white shadow text-gray-800 hover:bg-indigo-50 active:bg-indigo-100'
+                    : 'bg-white shadow text-gray-800 hover:bg-sky-50 active:bg-sky-100'
                 }`}
               >
                 {letter}
