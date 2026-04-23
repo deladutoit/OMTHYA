@@ -1,5 +1,6 @@
 import { MemoryFlip } from './MemoryFlip'
 import { WordScramble } from './WordScramble'
+import { Hangman } from './Hangman'
 import { QuickTap } from './QuickTap'
 import { TrueOrFalse } from './TrueOrFalse'
 import type { Subject, AgeGroup, Language } from '../types'
@@ -28,6 +29,9 @@ export function GameRouter({ subject, ageGroup, language, onComplete, onBack }: 
 
   // Primary + Teen routing by subject
   if (subject === 'english') {
+    if (ageGroup === 'teen') {
+      return <Hangman language={language} onComplete={onComplete} onBack={onBack} />
+    }
     return (
       <WordScramble
         ageGroup={ageGroup}
