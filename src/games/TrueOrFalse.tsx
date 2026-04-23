@@ -25,7 +25,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export function TrueOrFalse({ ageGroup, language, onComplete, onBack }: Props) {
-  const statements = shuffle(getTrueFalseStatements(ageGroup)).slice(0, STATEMENTS_PER_ROUND)
+  const [statements] = useState(() => shuffle(getTrueFalseStatements(ageGroup)).slice(0, STATEMENTS_PER_ROUND))
 
   const [index, setIndex]       = useState(0)
   const [timeLeft, setTimeLeft] = useState(TIME_PER_STATEMENT)

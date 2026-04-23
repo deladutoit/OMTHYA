@@ -32,7 +32,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export function QuickTap({ ageGroup, language, onComplete, onBack }: Props) {
-  const questions = shuffle(getQuickTapQuestions(ageGroup)).slice(0, QUESTIONS_PER_ROUND)
+  const [questions] = useState(() => shuffle(getQuickTapQuestions(ageGroup)).slice(0, QUESTIONS_PER_ROUND))
 
   const [index, setIndex]       = useState(0)
   const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION)
