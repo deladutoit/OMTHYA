@@ -1,13 +1,17 @@
-import { useState } from 'react'
+import { useState, Suspense, lazy } from 'react'
 import { LanguageScreen } from './components/LanguageScreen'
 import { WelcomeScreen } from './components/WelcomeScreen'
 import { MenuScreen } from './components/MenuScreen'
 import { SubjectScreen } from './components/SubjectScreen'
 import { EndScreen } from './components/EndScreen'
 import { GameRouter } from './games/GameRouter'
-import { SoccerGame } from './games/SoccerGame'
 import { saveSession, clearSession, logCompletedSession } from './lib/session'
 import type { Screen, Language, AgeGroup, Subject } from './types'
+
+// Lazy-load Phaser so the ~1.4 MB engine only downloads when the soccer game is opened
+const SoccerGame = lazy(() =>
+  import('./games/SoccerGame').then((m) => ({ default: m.SoccerGame })),
+)
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('language')
@@ -94,7 +98,15 @@ export default function App() {
       return <EndScreen userName={userName} language={language} onRestart={handleRestart} />
 
     case 'offline':
-      return <SoccerGame onBack={() => setScreen('menu')} />
+      return (
+        <Suspense fallback={
+          <div className="min-h-screen bg-green-800 flex items-center justify-center">
+            <p className="text-white text-2xl font-bold animate-pulse">Loading game…</p>
+          </div>
+        }>
+          <SoccerGame onBack={() => setScreen('menu')} />
+        </Suspense>
+      )
 
     // loading screen no longer needed — games are instant
     default:
