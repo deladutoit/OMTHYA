@@ -79,7 +79,7 @@ export function QuickTap({ ageGroup, language, onComplete, onBack }: Props) {
   function handleTimeout() {
     setSelected('__timeout__')
     setStreak(0)
-    setTimeout(advance, 1400)
+    setTimeout(advance, 2500)
   }
 
   const handleSelect = useCallback(
@@ -96,7 +96,7 @@ export function QuickTap({ ageGroup, language, onComplete, onBack }: Props) {
       } else {
         setStreak(0)
       }
-      setTimeout(advance, 1200)
+      setTimeout(advance, 2500)
     },
     [selected, current, timeLeft], // eslint-disable-line react-hooks/exhaustive-deps
   )

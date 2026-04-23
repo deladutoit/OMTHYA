@@ -33,7 +33,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export function WordScramble({ ageGroup, language, onComplete, onBack }: Props) {
-  const allWords = shuffle(getScrambleWords(ageGroup)).slice(0, 8)
+  const [allWords] = useState(() => shuffle(getScrambleWords(ageGroup)).slice(0, 8))
   const [index, setIndex] = useState(0)
   const [pool, setPool] = useState<string[]>(() => shuffleWord(allWords[0].word))
   const [answer, setAnswer] = useState<string[]>([])

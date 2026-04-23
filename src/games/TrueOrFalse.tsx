@@ -74,7 +74,7 @@ export function TrueOrFalse({ ageGroup, language, onComplete, onBack }: Props) {
     setStreak(0)
     // Show "time's up" state via a sentinel
     setAnswer(-1 as unknown as boolean)
-    setTimeout(advance, 1600)
+    setTimeout(advance, 2800)
   }
 
   const handleAnswer = useCallback(
@@ -91,7 +91,7 @@ export function TrueOrFalse({ ageGroup, language, onComplete, onBack }: Props) {
       } else {
         setStreak(0)
       }
-      setTimeout(advance, 1400)
+      setTimeout(advance, 2800)
     },
     [answer, current, timeLeft], // eslint-disable-line react-hooks/exhaustive-deps
   )
