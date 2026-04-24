@@ -1,4 +1,6 @@
 import * as Phaser from 'phaser'
+import { t } from '../../lib/translations'
+import type { Language } from '../../types'
 
 // ─── Scene dimensions ───────────────────────────────────────────────────────
 const W = 400
@@ -45,6 +47,9 @@ function perspScale(y: number) {
 
 // ── SoccerScene ──────────────────────────────────────────────────────────────
 export class SoccerScene extends Phaser.Scene {
+  // Language
+  private lang: Language = 'english'
+
   // State
   private phase: Phase = 'ready'
   private shots  = 0
@@ -86,6 +91,8 @@ export class SoccerScene extends Phaser.Scene {
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   create() {
+    this.lang = (this.registry.get('language') as Language) ?? 'english'
+
     // Graphics layers (z-order matters)
     this.gField  = this.add.graphics()
     this.gGoal   = this.add.graphics()
@@ -94,7 +101,7 @@ export class SoccerScene extends Phaser.Scene {
     this.gFX     = this.add.graphics()
 
     // Back button
-    this.add.text(14, 20, '← Back', {
+    this.add.text(14, 20, `← ${t(this.lang, 'back')}`, {
       fontSize: '18px', color: '#fff',
       stroke: '#000', strokeThickness: 2,
     }).setInteractive({ useHandCursor: true })
@@ -116,7 +123,7 @@ export class SoccerScene extends Phaser.Scene {
     }).setOrigin(1, 0.5)
 
     // Hint text
-    this.txtHint = this.add.text(W / 2, H - 58, 'Swipe up from the ball to shoot', {
+    this.txtHint = this.add.text(W / 2, H - 58, t(this.lang, 'swipeToShoot'), {
       fontSize: '17px', fontStyle: 'bold', color: '#ffff00',
       stroke: '#000', strokeThickness: 3,
     }).setOrigin(0.5)
@@ -171,21 +178,21 @@ export class SoccerScene extends Phaser.Scene {
         // Inside goal — check keeper reach
         const kReach = KP_W * 0.72
         if (Math.abs(this.bx - this.kCX) < kReach) {
-          this.onResult(false, 'SAVED! 🧤')
+          this.onResult(false, t(this.lang, 'savedMsg'))
         } else {
           this.goals++
-          this.onResult(true, 'GOAL! 🎉')
+          this.onResult(true, t(this.lang, 'goalMsg'))
         }
       } else if (!inPost) {
-        this.onResult(false, this.bx < GOAL_L ? 'WIDE LEFT!' : 'WIDE RIGHT!')
+        this.onResult(false, t(this.lang, 'wideMsg'))
       } else {
-        this.onResult(false, 'OVER THE BAR!')
+        this.onResult(false, t(this.lang, 'overBarMsg'))
       }
     }
 
     // Ball left screen without hitting goal area
     if (this.by < GOAL_T - 80 || this.bx < -60 || this.bx > W + 60) {
-      if (!this.evaluated) { this.evaluated = true; this.onResult(false, 'MISS!') }
+      if (!this.evaluated) { this.evaluated = true; this.onResult(false, t(this.lang, 'missMsg')) }
     }
   }
 
@@ -327,8 +334,9 @@ export class SoccerScene extends Phaser.Scene {
   private showEnd() {
     this.phase = 'done'
     const g = this.goals
-    const line1 = g === 5 ? '🏆 PERFECT!' : g >= 4 ? '⭐ WORLD CLASS' : g >= 3 ? '🔥 GREAT STRIKER' : g >= 2 ? '👍 DECENT SHOT' : '💪 KEEP TRYING'
-    const line2 = `${g} / ${SHOTS_TOTAL} goals`
+    const ratingKey = g === 5 ? 'soccerRating5' : g >= 4 ? 'soccerRating4' : g >= 3 ? 'soccerRating3' : g >= 2 ? 'soccerRating2' : g >= 1 ? 'soccerRating1' : 'soccerRating0'
+    const line1 = t(this.lang, ratingKey)
+    const line2 = `${g} / ${SHOTS_TOTAL} ${t(this.lang, 'goalsScored')}`
 
     this.txtResult.setText(`${line1}\n${line2}`)
     this.txtResult.setStyle({
@@ -337,7 +345,7 @@ export class SoccerScene extends Phaser.Scene {
     this.txtResult.setVisible(true)
 
     // Play Again
-    this.add.text(W / 2, H * 0.64, '▶  Play Again', {
+    this.add.text(W / 2, H * 0.64, `▶  ${t(this.lang, 'playAgain')}`, {
       fontSize: '22px', fontStyle: 'bold', color: '#fff',
       backgroundColor: '#16a34a', padding: { x: 22, y: 14 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true })

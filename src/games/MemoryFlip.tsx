@@ -141,7 +141,7 @@ export function MemoryFlip({ subject, ageGroup, language, onComplete, onBack }: 
               : t(language, 'keepPractising')}
           </h1>
           <p className="text-xl text-gray-500 mb-2">
-            {totalPairs} pairs · {attempts} attempts
+            {totalPairs} {t(language, 'pairsWord')} · {attempts} {t(language, 'attemptsWord')}
           </p>
 
           {/* Score bar */}
@@ -159,7 +159,7 @@ export function MemoryFlip({ subject, ageGroup, language, onComplete, onBack }: 
               onClick={handleRestart}
               className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xl font-semibold py-4 rounded-2xl transition-colors"
             >
-              <RotateCcw size={22} /> Play Again
+              <RotateCcw size={22} /> {t(language, 'playAgain')}
             </button>
             <button
               onClick={() => onComplete(score)}

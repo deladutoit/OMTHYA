@@ -148,7 +148,7 @@ export function WordScramble({ ageGroup, language, onComplete, onBack }: Props) 
               : t(language, 'keepPractising')}
           </h1>
           <p className="text-xl text-gray-500 mb-6">
-            {score} / {allWords.length * 10} points
+            {score} / {allWords.length * 10} {t(language, 'points')}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-4 mb-8">
             <div
@@ -163,7 +163,7 @@ export function WordScramble({ ageGroup, language, onComplete, onBack }: Props) 
               onClick={handleRestart}
               className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xl font-semibold py-4 rounded-2xl transition-colors"
             >
-              <RotateCcw size={22} /> Play Again
+              <RotateCcw size={22} /> {t(language, 'playAgain')}
             </button>
             <button
               onClick={() => onComplete(Math.max(10, pct))}
@@ -224,7 +224,7 @@ export function WordScramble({ ageGroup, language, onComplete, onBack }: Props) 
           }`}
         >
           {answer.length === 0 && (
-            <p className="text-gray-300 text-xl select-none">Tap letters below…</p>
+            <p className="text-gray-300 text-xl select-none">{t(language, 'tapLettersBelow')}</p>
           )}
           {answer.map((letter, i) => (
             <button
@@ -259,7 +259,7 @@ export function WordScramble({ ageGroup, language, onComplete, onBack }: Props) 
             disabled={!!feedback || pool.length === 0}
             className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-100 text-amber-700 font-semibold text-lg disabled:opacity-40 active:scale-95 transition-transform"
           >
-            <Lightbulb size={20} /> Hint {hintsUsed > 0 ? `(${hintsUsed})` : ''}
+            <Lightbulb size={20} /> {t(language, 'hintBtn')} {hintsUsed > 0 ? `(${hintsUsed})` : ''}
           </button>
 
           <button
@@ -267,7 +267,7 @@ export function WordScramble({ ageGroup, language, onComplete, onBack }: Props) 
             disabled={answer.length !== current.word.length || !!feedback}
             className="flex-1 py-3 rounded-2xl bg-violet-600 text-white font-bold text-xl disabled:opacity-40 active:scale-95 transition-transform"
           >
-            {feedback === 'correct' ? '✅ Correct!' : feedback === 'wrong' ? '❌ Try again' : 'Check'}
+            {feedback === 'correct' ? t(language, 'correctMsg') : feedback === 'wrong' ? t(language, 'wrongMsg') : t(language, 'checkBtn')}
           </button>
 
           <button
@@ -275,7 +275,7 @@ export function WordScramble({ ageGroup, language, onComplete, onBack }: Props) 
             disabled={!!feedback}
             className="px-5 py-3 rounded-2xl bg-gray-100 text-gray-600 font-semibold text-lg disabled:opacity-40 active:scale-95 transition-transform"
           >
-            Skip
+            {t(language, 'skipBtn')}
           </button>
         </div>
       </div>

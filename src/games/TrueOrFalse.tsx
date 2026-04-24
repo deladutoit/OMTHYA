@@ -25,7 +25,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export function TrueOrFalse({ ageGroup, language, onComplete, onBack }: Props) {
-  const [statements] = useState(() => shuffle(getTrueFalseStatements(ageGroup)).slice(0, STATEMENTS_PER_ROUND))
+  const [statements] = useState(() => shuffle(getTrueFalseStatements(ageGroup, language)).slice(0, STATEMENTS_PER_ROUND))
 
   const [index, setIndex]       = useState(0)
   const [timeLeft, setTimeLeft] = useState(TIME_PER_STATEMENT)
@@ -128,7 +128,7 @@ export function TrueOrFalse({ ageGroup, language, onComplete, onBack }: Props) {
               ? t(language, 'goodJob')
               : t(language, 'keepPractising')}
           </h1>
-          <p className="text-xl text-gray-500 mb-2">{score} points</p>
+          <p className="text-xl text-gray-500 mb-2">{score} {t(language, 'points')}</p>
           <div className="w-full bg-gray-200 rounded-full h-4 mb-8">
             <div
               className={`h-4 rounded-full transition-all ${
@@ -142,7 +142,7 @@ export function TrueOrFalse({ ageGroup, language, onComplete, onBack }: Props) {
               onClick={handleRestart}
               className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xl font-semibold py-4 rounded-2xl transition-colors"
             >
-              <RotateCcw size={22} /> Play Again
+              <RotateCcw size={22} /> {t(language, 'playAgain')}
             </button>
             <button
               onClick={() => onComplete(Math.max(10, pct))}
@@ -227,20 +227,20 @@ export function TrueOrFalse({ ageGroup, language, onComplete, onBack }: Props) {
             disabled={answer !== null}
             className={`${trueState()} rounded-3xl py-10 text-4xl font-black shadow-xl active:scale-95 transition-all select-none`}
           >
-            ✅ TRUE
+            {t(language, 'trueBtn')}
           </button>
           <button
             onClick={() => handleAnswer(false)}
             disabled={answer !== null}
             className={`${falseState()} rounded-3xl py-10 text-4xl font-black shadow-xl active:scale-95 transition-all select-none`}
           >
-            ❌ FALSE
+            {t(language, 'falseBtn')}
           </button>
         </div>
 
         {timedOut && (
           <p className="text-red-500 font-bold text-xl">
-            ⏱ Time's up! Answer was: {current.isTrue ? 'TRUE' : 'FALSE'}
+            {t(language, 'timesUpWas', { answer: current.isTrue ? t(language, 'trueBtn') : t(language, 'falseBtn') })}
           </p>
         )}
       </div>

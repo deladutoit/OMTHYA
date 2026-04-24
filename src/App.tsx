@@ -5,7 +5,7 @@ import { MenuScreen } from './components/MenuScreen'
 import { SubjectScreen } from './components/SubjectScreen'
 import { EndScreen } from './components/EndScreen'
 import { GameRouter } from './games/GameRouter'
-import { saveSession, clearSession, logCompletedSession } from './lib/session'
+import { saveSession, clearSession, logCompletedSession, getTokens, addToken, spendToken } from './lib/session'
 import type { Screen, Language, AgeGroup, Subject } from './types'
 
 // Lazy-load Phaser so the ~1.4 MB engine only downloads when the soccer game is opened
@@ -19,6 +19,7 @@ export default function App() {
   const [userName, setUserName] = useState('')
   const [ageGroup, setAgeGroup] = useState<AgeGroup>('primary')
   const [subject, setSubject] = useState<Subject>('english')
+  const [tokens, setTokens] = useState(() => getTokens())
 
   function handleLanguageSelect(lang: Language) {
     setLanguage(lang)
@@ -46,7 +47,16 @@ export default function App() {
 
   function handleGameComplete(score: number) {
     logCompletedSession(score)
+    addToken()
+    setTokens(getTokens())
     setScreen('end')
+  }
+
+  function handleOfflineSelect() {
+    if (spendToken()) {
+      setTokens(getTokens())
+      setScreen('offline')
+    }
   }
 
   function handleRestart() {
@@ -68,8 +78,9 @@ export default function App() {
         <MenuScreen
           userName={userName}
           language={language}
+          tokens={tokens}
           onAgeGroupSelect={handleAgeGroupSelect}
-          onOfflineSelect={() => setScreen('offline')}
+          onOfflineSelect={handleOfflineSelect}
         />
       )
 
@@ -95,7 +106,15 @@ export default function App() {
       )
 
     case 'end':
-      return <EndScreen userName={userName} language={language} onRestart={handleRestart} />
+      return (
+        <EndScreen
+          userName={userName}
+          language={language}
+          tokensEarned={1}
+          onContinue={() => setScreen('menu')}
+          onRestart={handleRestart}
+        />
+      )
 
     case 'offline':
       return (
@@ -104,7 +123,7 @@ export default function App() {
             <p className="text-white text-2xl font-bold animate-pulse">Loading game…</p>
           </div>
         }>
-          <SoccerGame onBack={() => setScreen('menu')} />
+          <SoccerGame language={language} onBack={() => setScreen('menu')} />
         </Suspense>
       )
 

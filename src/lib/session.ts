@@ -41,3 +41,21 @@ export function getSessionLog(): SessionData[] {
   const raw = localStorage.getItem(LOG_KEY)
   return raw ? JSON.parse(raw) : []
 }
+
+// ─── Soccer tokens ───────────────────────────────────────────────────────────
+const TOKENS_KEY = 'es_soccer_tokens'
+
+export function getTokens(): number {
+  return parseInt(localStorage.getItem(TOKENS_KEY) ?? '0', 10)
+}
+
+export function addToken(): void {
+  localStorage.setItem(TOKENS_KEY, String(getTokens() + 1))
+}
+
+export function spendToken(): boolean {
+  const current = getTokens()
+  if (current <= 0) return false
+  localStorage.setItem(TOKENS_KEY, String(current - 1))
+  return true
+}

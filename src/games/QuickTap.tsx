@@ -133,7 +133,7 @@ export function QuickTap({ ageGroup, language, onComplete, onBack }: Props) {
               ? t(language, 'goodJob')
               : t(language, 'keepPractising')}
           </h1>
-          <p className="text-xl text-gray-500 mb-2">{score} points</p>
+          <p className="text-xl text-gray-500 mb-2">{score} {t(language, 'points')}</p>
           <div className="w-full bg-gray-200 rounded-full h-4 mb-8">
             <div
               className={`h-4 rounded-full transition-all ${
@@ -147,7 +147,7 @@ export function QuickTap({ ageGroup, language, onComplete, onBack }: Props) {
               onClick={handleRestart}
               className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xl font-semibold py-4 rounded-2xl transition-colors"
             >
-              <RotateCcw size={22} /> Play Again
+              <RotateCcw size={22} /> {t(language, 'playAgain')}
             </button>
             <button
               onClick={() => onComplete(Math.max(10, pct))}
@@ -236,7 +236,7 @@ export function QuickTap({ ageGroup, language, onComplete, onBack }: Props) {
 
         {selected === '__timeout__' && (
           <p className="text-red-500 font-bold text-xl">
-            ⏱ Time's up! Answer: {current.answer}
+            {t(language, 'timesUp', { answer: current.answer })}
           </p>
         )}
       </div>

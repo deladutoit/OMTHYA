@@ -241,6 +241,7 @@ export function getQuickTapQuestions(ageGroup: AgeGroup): QuickTapQuestion[] {
 
 // ---------------------------------------------------------------------------
 // TRUE OR FALSE — General Knowledge Primary + Teen
+// All 4 languages — Oshiwambo & Khoekhoegowab translations need professional review
 // ---------------------------------------------------------------------------
 
 export interface TrueFalseStatement {
@@ -248,38 +249,133 @@ export interface TrueFalseStatement {
   isTrue: boolean
 }
 
-const TRUEFALSE_PRIMARY: TrueFalseStatement[] = [
-  { statement: 'Windhoek is the capital city of Namibia.',          isTrue: true },
-  { statement: 'Namibia gained independence on 21 March 1990.',     isTrue: true },
-  { statement: 'The Namib Desert is the oldest desert on Earth.',   isTrue: true },
-  { statement: 'Etosha is Namibia\'s largest national park.',       isTrue: true },
-  { statement: 'The Orange River forms Namibia\'s northern border.',isTrue: false },
-  { statement: 'Namibia is in East Africa.',                        isTrue: false },
-  { statement: 'Sam Nujoma was Namibia\'s first president.',        isTrue: true },
-  { statement: 'Gaborone is the capital of Zimbabwe.',              isTrue: false },
-  { statement: 'South Africa\'s capital is Pretoria.',              isTrue: true },
-  { statement: 'Namibia is the most densely populated country in Africa.', isTrue: false },
-  { statement: 'The Zambezi River flows through northern Namibia.', isTrue: true },
-  { statement: 'Walvis Bay is Namibia\'s main harbour city.',       isTrue: true },
+const TRUEFALSE_PRIMARY_EN: TrueFalseStatement[] = [
+  { statement: 'Windhoek is the capital city of Namibia.',                         isTrue: true },
+  { statement: 'Namibia gained independence on 21 March 1990.',                    isTrue: true },
+  { statement: 'The Namib Desert is the oldest desert on Earth.',                  isTrue: true },
+  { statement: 'Etosha is Namibia\'s largest national park.',                      isTrue: true },
+  { statement: 'The Orange River forms Namibia\'s northern border.',               isTrue: false },
+  { statement: 'Namibia is in East Africa.',                                       isTrue: false },
+  { statement: 'Sam Nujoma was Namibia\'s first president.',                       isTrue: true },
+  { statement: 'Gaborone is the capital of Zimbabwe.',                             isTrue: false },
+  { statement: 'South Africa\'s capital is Pretoria.',                             isTrue: true },
+  { statement: 'Namibia is the most densely populated country in Africa.',         isTrue: false },
+  { statement: 'The Zambezi River flows through northern Namibia.',                isTrue: true },
+  { statement: 'Walvis Bay is Namibia\'s main harbour city.',                      isTrue: true },
 ]
 
-const TRUEFALSE_TEEN: TrueFalseStatement[] = [
-  { statement: 'SWAPO has been Namibia\'s ruling party since independence.', isTrue: true },
-  { statement: 'The Skeleton Coast is on Namibia\'s eastern border.',        isTrue: false },
-  { statement: 'Photosynthesis is how plants make food from sunlight.',      isTrue: true },
-  { statement: 'The Himba people are indigenous to southern Namibia.',       isTrue: false },
-  { statement: 'An ecosystem includes both living and non-living things.',   isTrue: true },
-  { statement: 'Namibia has the world\'s largest cheetah population.',       isTrue: true },
-  { statement: 'The Sperrgebiet was renamed Tsau ǁKhaeb National Park.',     isTrue: true },
-  { statement: 'Namibia is the second largest country in Africa.',           isTrue: false },
-  { statement: 'DNA contains the genetic instructions for living organisms.',isTrue: true },
-  { statement: 'The human body has 206 bones.',                              isTrue: true },
-  { statement: 'Sound travels faster than light.',                           isTrue: false },
-  { statement: 'Namibia shares a border with Zambia in the Caprivi Strip.',  isTrue: true },
+const TRUEFALSE_TEEN_EN: TrueFalseStatement[] = [
+  { statement: 'SWAPO has been Namibia\'s ruling party since independence.',       isTrue: true },
+  { statement: 'The Skeleton Coast is on Namibia\'s eastern border.',              isTrue: false },
+  { statement: 'Photosynthesis is how plants make food from sunlight.',            isTrue: true },
+  { statement: 'The Himba people are indigenous to southern Namibia.',             isTrue: false },
+  { statement: 'An ecosystem includes both living and non-living things.',         isTrue: true },
+  { statement: 'Namibia has the world\'s largest cheetah population.',             isTrue: true },
+  { statement: 'The Sperrgebiet was renamed Tsau ǁKhaeb National Park.',          isTrue: true },
+  { statement: 'Namibia is the second largest country in Africa.',                 isTrue: false },
+  { statement: 'DNA contains the genetic instructions for living organisms.',      isTrue: true },
+  { statement: 'The human body has 206 bones.',                                    isTrue: true },
+  { statement: 'Sound travels faster than light.',                                 isTrue: false },
+  { statement: 'Namibia shares a border with Zambia in the Caprivi Strip.',        isTrue: true },
 ]
 
-export function getTrueFalseStatements(ageGroup: AgeGroup): TrueFalseStatement[] {
-  return ageGroup === 'teen' ? TRUEFALSE_TEEN : TRUEFALSE_PRIMARY
+const TRUEFALSE_PRIMARY_AF: TrueFalseStatement[] = [
+  { statement: 'Windhoek is die hoofstad van Namibië.',                            isTrue: true },
+  { statement: 'Namibië het onafhanklikheid op 21 Maart 1990 gekry.',              isTrue: true },
+  { statement: 'Die Namibwoestyn is die oudste woestyn op Aarde.',                 isTrue: true },
+  { statement: 'Etosha is Namibië se grootste nasionale park.',                    isTrue: true },
+  { statement: 'Die Oranjerivier vorm Namibië se noordelike grens.',               isTrue: false },
+  { statement: 'Namibië is in Oos-Afrika geleë.',                                  isTrue: false },
+  { statement: 'Sam Nujoma was Namibië se eerste president.',                      isTrue: true },
+  { statement: 'Gaborone is die hoofstad van Zimbabwe.',                           isTrue: false },
+  { statement: 'Pretoria is die hoofstad van Suid-Afrika.',                        isTrue: true },
+  { statement: 'Namibië is die digsbevolkte land in Afrika.',                      isTrue: false },
+  { statement: 'Die Zambesirivier vloei deur die noorde van Namibië.',             isTrue: true },
+  { statement: 'Walvisbaai is Namibië se hoofhawestad.',                           isTrue: true },
+]
+
+const TRUEFALSE_TEEN_AF: TrueFalseStatement[] = [
+  { statement: 'SWAPO is sedert onafhanklikheid Namibië se regerende party.',      isTrue: true },
+  { statement: 'Die Skeletkus is op Namibië se oostelike grens.',                  isTrue: false },
+  { statement: 'Fotosintese is hoe plante voedsel van sonlig maak.',               isTrue: true },
+  { statement: 'Die Himba-mense is inheems aan die suide van Namibië.',            isTrue: false },
+  { statement: '\'n Ekosisteem sluit sowel lewende as nie-lewende dinge in.',      isTrue: true },
+  { statement: 'Namibië het die wêreld se grootste jagluiperd-populasie.',         isTrue: true },
+  { statement: 'Die Sperrgebiet is herdoop na Tsau ǁKhaeb Nasionale Park.',       isTrue: true },
+  { statement: 'Namibië is die tweede grootste land in Afrika.',                   isTrue: false },
+  { statement: 'DNS bevat die genetiese instruksies vir lewende organismes.',      isTrue: true },
+  { statement: 'Die menslike liggaam het 206 bene.',                               isTrue: true },
+  { statement: 'Klank reis vinniger as lig.',                                      isTrue: false },
+  { statement: 'Namibië deel \'n grens met Zambië in die Caprivi-strook.',        isTrue: true },
+]
+
+// Oshiwambo (Ndonga) — professional linguistic review recommended
+const TRUEFALSE_PRIMARY_OSHI: TrueFalseStatement[] = [
+  { statement: 'Windhoek oshi omukunda gwa kula gwaNamibia.',                      isTrue: true },
+  { statement: 'Namibia oya mona ounafangithilo pa 21 Machi 1990.',               isTrue: true },
+  { statement: 'Epya lyaNamib oshi epya la kula pe lyondjemba yonale.',           isTrue: true },
+  { statement: 'Etosha oshi omufitu omupya gwa kula muNamibia.',                  isTrue: true },
+  { statement: 'Uulambo waOrange wu yooloka komeho ya totatata yaNamibia.',       isTrue: false },
+  { statement: 'Namibia oshi moAfrika yomuposho.',                                 isTrue: false },
+  { statement: 'Sam Nujoma oshi omupresidente gwotango gwaNamibia.',               isTrue: true },
+  { statement: 'Gaborone oshi omukunda gwa kula waZimbabwe.',                      isTrue: false },
+  { statement: 'Pretoria oshi omukunda gwa kula waSouth Africa.',                  isTrue: true },
+  { statement: 'Namibia oshi oshilongo sha kala naanambelewa ahapu muAfrika.',     isTrue: false },
+  { statement: 'Uulambo waZambezi wu tembuka moNamibia yombanda.',                isTrue: true },
+  { statement: 'Walvis Bay oshi oshilando sha kula shaNamibia.',                   isTrue: true },
+]
+
+const TRUEFALSE_TEEN_OSHI: TrueFalseStatement[] = [
+  { statement: 'SWAPO oya kala omulilo gwotango gwoufemba waNamibia.',            isTrue: true },
+  { statement: 'Skeleton Coast oshi kombanda yomuposho yaNamibia.',               isTrue: false },
+  { statement: 'Fotosynthesis oshi eenghono lyomauti okumona oikulya yoshiimba.', isTrue: true },
+  { statement: 'Ovahimba ovo aantu yopashikuluntu muNamibia yodimbuluka.',        isTrue: false },
+  { statement: 'Ecosystem oi na uuyelele waantu naantu yaantu yoindingili.',      isTrue: true },
+  { statement: 'Namibia oya na omutumba gwaaepya gaa hepaulwa muAfrika onthe.',   isTrue: true },
+  { statement: 'Sperrgebiet ya hindilwa Tsau ǁKhaeb National Park.',             isTrue: true },
+  { statement: 'Namibia oshi oshilondo oshali kolongo oshiveli muAfrika.',        isTrue: false },
+  { statement: 'DNA oya na ombapila yokupanga omubili gwomuntu.',                 isTrue: true },
+  { statement: 'Omubili gwomuntu guna omake 206.',                                isTrue: true },
+  { statement: 'Edhina le yi tota nawa kolwaala.',                                isTrue: false },
+  { statement: 'Namibia ya yooloka ondjamba naZambia moCaprivi Strip.',           isTrue: true },
+]
+
+// Khoekhoegowab — professional linguistic review strongly recommended
+const TRUEFALSE_PRIMARY_KHOE: TrueFalseStatement[] = [
+  { statement: 'Windhoek ge Namibiab ǁkharib ǀguis ǀkharib.',                    isTrue: true },
+  { statement: 'Namibia ge 21 Maarsi 1990 ǀguis ǀhoas.',                         isTrue: true },
+  { statement: 'Namib epab ge dīb ǀgui epa ǁaes.',                               isTrue: true },
+  { statement: 'Etosha ge Namibiab ǀguis ǁkharib omufitub.',                      isTrue: true },
+  { statement: 'Orange ǂgari ge Namibiab ǀkhari ǁgôab ǀgaoǀkhāb.',              isTrue: false },
+  { statement: 'Namibia ge Afrikab ǀnomasab ǁaes.',                              isTrue: false },
+  { statement: 'Sam Nujoma ge Namibiab ǀguis presidentb.',                        isTrue: true },
+  { statement: 'Gaborone ge Zimbabweb ǁkharib ǀguis ǀkharib.',                  isTrue: false },
+  { statement: 'Pretoria ge Suid-Afrikab ǁkharib ǀguis ǀkharib.',               isTrue: true },
+  { statement: 'Namibia ge Afrikab ǀaob ǀguis ǁaes.',                           isTrue: false },
+  { statement: 'Zambezi ǂgari ge Namibiab ǀkhari ǁgôab.',                        isTrue: true },
+  { statement: 'Walvis Bay ge Namibiab ǀguis ǂgari ǁkharib.',                   isTrue: true },
+]
+
+const TRUEFALSE_TEEN_KHOE: TrueFalseStatement[] = [
+  { statement: 'SWAPO ge Namibia ǀhoas ǁnâb ǀguis ǀhui partys.',               isTrue: true },
+  { statement: 'Skeleton Coast ge Namibiab ǀnomasab ǀgâib.',                    isTrue: false },
+  { statement: 'Fotosynthesis ge mauti ǁkhāb ǀguis.',                           isTrue: true },
+  { statement: 'Himba ge Namibiab ǀkhari ǀnomas ǀguis.',                        isTrue: false },
+  { statement: 'Ecosystem ge ǀhui naantu ǀkhai ǀhui.',                         isTrue: true },
+  { statement: 'Namibia ge Afrikab ǀguis gepard ǂhâ.',                          isTrue: true },
+  { statement: 'Sperrgebiet ge Tsau ǁKhaeb National Park ǁnâ.',                isTrue: true },
+  { statement: 'Namibia ge Afrikab ǁgôab ǀnî ǁaes.',                           isTrue: false },
+  { statement: 'DNA ge naubs ǀkhai ǀhui.',                                      isTrue: true },
+  { statement: 'Naubs ge 206 ǂgaiga.',                                           isTrue: true },
+  { statement: 'ǀHui ge ǁgôab ǀnî ǀgui.',                                      isTrue: false },
+  { statement: 'Namibia ge Zambia ǀkhai Caprivi Strip ǀgâi.',                   isTrue: true },
+]
+
+export function getTrueFalseStatements(ageGroup: AgeGroup, language: Language): TrueFalseStatement[] {
+  if (language === 'afrikaans') return ageGroup === 'teen' ? TRUEFALSE_TEEN_AF   : TRUEFALSE_PRIMARY_AF
+  if (language === 'oshiwambo') return ageGroup === 'teen' ? TRUEFALSE_TEEN_OSHI : TRUEFALSE_PRIMARY_OSHI
+  if (language === 'khoekhoegowab') return ageGroup === 'teen' ? TRUEFALSE_TEEN_KHOE : TRUEFALSE_PRIMARY_KHOE
+  return ageGroup === 'teen' ? TRUEFALSE_TEEN_EN : TRUEFALSE_PRIMARY_EN
 }
 
 // ---------------------------------------------------------------------------

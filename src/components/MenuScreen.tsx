@@ -1,4 +1,4 @@
-import { Baby, Users, GraduationCap, Gamepad2, WifiOff } from 'lucide-react'
+import { Baby, Users, GraduationCap, Gamepad2, WifiOff, Lock } from 'lucide-react'
 import { t } from '../lib/translations'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import type { AgeGroup, Language } from '../types'
@@ -6,11 +6,12 @@ import type { AgeGroup, Language } from '../types'
 interface Props {
   userName: string
   language: Language
+  tokens: number
   onAgeGroupSelect: (ag: AgeGroup) => void
   onOfflineSelect: () => void
 }
 
-export function MenuScreen({ userName, language, onAgeGroupSelect, onOfflineSelect }: Props) {
+export function MenuScreen({ userName, language, tokens, onAgeGroupSelect, onOfflineSelect }: Props) {
   const isOnline = useOnlineStatus()
 
   const ageGroups: { id: AgeGroup; label: string; ages: string; icon: typeof Baby; bg: string }[] = [
@@ -55,17 +56,31 @@ export function MenuScreen({ userName, language, onAgeGroupSelect, onOfflineSele
             )
           })}
 
-          {/* Offline games — always available */}
+          {/* Soccer — requires a token earned from completing a lesson */}
           <button
-            onClick={onOfflineSelect}
-            className="bg-orange-500 hover:bg-orange-600 text-white p-8 rounded-3xl shadow-xl transition-transform hover:scale-105 active:scale-95"
+            onClick={tokens > 0 ? onOfflineSelect : undefined}
+            disabled={tokens === 0}
+            className={`${
+              tokens > 0
+                ? 'bg-orange-500 hover:bg-orange-600 hover:scale-105 active:scale-95'
+                : 'bg-gray-300 cursor-not-allowed'
+            } text-white p-8 rounded-3xl shadow-xl transition-transform`}
           >
             <div className="flex flex-col items-center gap-4">
-              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-                <Gamepad2 size={44} />
+              <div className="relative">
+                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
+                  {tokens > 0 ? <Gamepad2 size={44} /> : <Lock size={40} />}
+                </div>
+                {tokens > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-yellow-400 text-gray-900 text-sm font-black rounded-full w-8 h-8 flex items-center justify-center shadow-md">
+                    {tokens}
+                  </span>
+                )}
               </div>
               <p className="text-3xl font-bold">{t(language, 'offlineGames')}</p>
-              <p className="text-xl opacity-90">{t(language, 'offlineDesc')}</p>
+              <p className="text-xl opacity-90">
+                {tokens > 0 ? `⚽ ×${tokens}` : t(language, 'noSoccerTokens')}
+              </p>
             </div>
           </button>
         </div>

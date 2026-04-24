@@ -57,12 +57,62 @@ export interface T {
   sessionComplete: string
   encouragement: string
   newSession: string
+  keepLearning: string
 
   // Errors
   lessonUnavailable: string
   lessonError: string
   tryAgain: string
   goBack: string
+
+  // Shared game strings
+  playAgain: string
+  points: string
+  menu: string
+
+  // MemoryFlip
+  pairsWord: string
+  attemptsWord: string
+
+  // WordScramble
+  tapLettersBelow: string
+  hintBtn: string
+  checkBtn: string
+  skipBtn: string
+  correctMsg: string
+  wrongMsg: string
+
+  // QuickTap
+  timesUp: string        // "⏱ Time's up! Answer: {answer}"
+
+  // TrueOrFalse
+  trueBtn: string
+  falseBtn: string
+  timesUpWas: string     // "⏱ Time's up! Answer was: {answer}"
+
+  // Hangman / Balloon Pop
+  balloonsLeft: string   // "{n} 🎈 left"
+  wordWas: string        // "💨 All popped! The word was: {word}"
+  pointsEarned: string   // "🎈 +{n} points!"
+
+  // Token system
+  noSoccerTokens: string
+  soccerTokenEarned: string
+
+  // Soccer
+  swipeToShoot: string
+  goalMsg: string
+  savedMsg: string
+  missMsg: string
+  wideMsg: string
+  overBarMsg: string
+  goalsScored: string
+  soccerRating5: string
+  soccerRating4: string
+  soccerRating3: string
+  soccerRating2: string
+  soccerRating1: string
+  soccerRating0: string
 }
 
 const en: T = {
@@ -114,11 +164,53 @@ const en: T = {
   sessionComplete: 'You completed your learning session!',
   encouragement: 'Keep learning something new every day.',
   newSession: 'Start New Session',
+  keepLearning: 'Keep Learning',
 
   lessonUnavailable: 'Lesson Unavailable',
   lessonError: "We couldn't load your lesson. Please try again.",
   tryAgain: 'Try Again',
   goBack: 'Go Back',
+
+  playAgain: 'Play Again',
+  points: 'points',
+  menu: 'Menu',
+
+  pairsWord: 'pairs',
+  attemptsWord: 'attempts',
+
+  tapLettersBelow: 'Tap letters below…',
+  hintBtn: 'Hint',
+  checkBtn: 'Check',
+  skipBtn: 'Skip',
+  correctMsg: '✅ Correct!',
+  wrongMsg: '❌ Try again',
+
+  timesUp: "⏱ Time's up! Answer: {answer}",
+
+  trueBtn: '✅ TRUE',
+  falseBtn: '❌ FALSE',
+  timesUpWas: "⏱ Time's up! Answer was: {answer}",
+
+  balloonsLeft: '{n} 🎈 left',
+  wordWas: '💨 All popped! The word was: {word}',
+  pointsEarned: '🎈 +{n} points!',
+
+  noSoccerTokens: 'Finish a lesson to earn a play!',
+  soccerTokenEarned: '⚽ You earned a soccer play!',
+
+  swipeToShoot: 'Swipe up from the ball to shoot',
+  goalMsg: 'GOAL! 🎉',
+  savedMsg: 'SAVED! 🧤',
+  missMsg: 'MISS!',
+  wideMsg: 'WIDE!',
+  overBarMsg: 'OVER THE BAR!',
+  goalsScored: 'goals scored',
+  soccerRating5: '🏆 Perfect! Unstoppable!',
+  soccerRating4: '⭐ World Class Striker!',
+  soccerRating3: '🔥 Great Shot!',
+  soccerRating2: '👍 Not Bad!',
+  soccerRating1: '💪 Keep Practising!',
+  soccerRating0: '😅 The keeper wins this time!',
 }
 
 const af: T = {
@@ -170,11 +262,53 @@ const af: T = {
   sessionComplete: 'Jy het jou leersessie voltooi!',
   encouragement: 'Bly elke dag iets nuuts leer.',
   newSession: 'Begin Nuwe Sessie',
+  keepLearning: 'Bly Leer',
 
   lessonUnavailable: 'Les Nie Beskikbaar',
   lessonError: 'Ons kon nie die les laai nie. Probeer asseblief weer.',
   tryAgain: 'Probeer Weer',
   goBack: 'Gaan Terug',
+
+  playAgain: 'Speel Weer',
+  points: 'punte',
+  menu: 'Kieslys',
+
+  pairsWord: 'pare',
+  attemptsWord: 'pogings',
+
+  tapLettersBelow: 'Tik letters hieronder…',
+  hintBtn: 'Wenk',
+  checkBtn: 'Kyk',
+  skipBtn: 'Slaan oor',
+  correctMsg: '✅ Korrek!',
+  wrongMsg: '❌ Probeer weer',
+
+  timesUp: '⏱ Tyd verstreke! Antwoord: {answer}',
+
+  trueBtn: '✅ WAAR',
+  falseBtn: '❌ ONWAAR',
+  timesUpWas: '⏱ Tyd verstreke! Antwoord was: {answer}',
+
+  balloonsLeft: '{n} 🎈 oor',
+  wordWas: '💨 Almal gebars! Die woord was: {word}',
+  pointsEarned: '🎈 +{n} punte!',
+
+  noSoccerTokens: 'Voltooi \'n les om \'n speel te verdien!',
+  soccerTokenEarned: '⚽ Jy het \'n sokkerspeel verdien!',
+
+  swipeToShoot: 'Vee op van die bal af om te skop',
+  goalMsg: 'DOEL! 🎉',
+  savedMsg: 'GESTOP! 🧤',
+  missMsg: 'MIS!',
+  wideMsg: 'WYD!',
+  overBarMsg: 'OOR DIE DOELIYNE!',
+  goalsScored: 'doele aangeteken',
+  soccerRating5: '🏆 Perfek! Onstopbaar!',
+  soccerRating4: '⭐ Wêreldklas!',
+  soccerRating3: '🔥 Goeie Skop!',
+  soccerRating2: '👍 Nie Sleg Nie!',
+  soccerRating1: '💪 Oefen Meer!',
+  soccerRating0: '😅 Die doelwagter wen hierdie keer!',
 }
 
 const oshi: T = {
@@ -226,11 +360,53 @@ const oshi: T = {
   sessionComplete: 'Owa mana omulongo gwobe gwokuliwa!',
   encouragement: 'Tya piti nokukala okuliwa iinima iipya omalanga gondje.',
   newSession: 'Tanga Omulongo Gumwe',
+  keepLearning: 'Tya piti nokukala',
 
   lessonUnavailable: 'Omulongo Agu Hole',
   lessonError: 'Atu kala okuload omulongo. Kala gumwe.',
   tryAgain: 'Kala Gumwe',
   goBack: 'Galuka',
+
+  playAgain: 'Luka Gumwe',
+  points: 'iipoints',
+  menu: 'Ehalo',
+
+  pairsWord: 'omaumbo',
+  attemptsWord: 'iinakufama',
+
+  tapLettersBelow: 'Tumba iireta moomu…',
+  hintBtn: 'Etaloko',
+  checkBtn: 'Talela',
+  skipBtn: 'Pita',
+  correctMsg: '✅ Owa longwa nawa!',
+  wrongMsg: '❌ Kala gumwe',
+
+  timesUp: '⏱ Ongula yeli piti! Eyambo: {answer}',
+
+  trueBtn: '✅ NAWA',
+  falseBtn: '❌ INANO',
+  timesUpWas: '⏱ Ongula yeli piti! Eyambo laali: {answer}',
+
+  balloonsLeft: '{n} 🎈 yali',
+  wordWas: '💨 Oshi manguluka! Oshihopapolwa shaali: {word}',
+  pointsEarned: '🎈 +{n} iipoints!',
+
+  noSoccerTokens: 'Mana omulongo opo u dule oluka!',
+  soccerTokenEarned: '⚽ Owa pewa oluka losokkere!',
+
+  swipeToShoot: 'Shefa po nombolo opo u dule okuhepa',
+  goalMsg: 'GOAL! 🎉',
+  savedMsg: 'OWA HUPITHA! 🧤',
+  missMsg: 'OWA PUKA!',
+  wideMsg: 'OSHIWANAWA!',
+  overBarMsg: 'OPOMBANDA!',
+  goalsScored: 'iigoal yandjwa',
+  soccerRating5: '🏆 Shaali nawa! Aapu na sha kukufa!',
+  soccerRating4: '⭐ Oshaambulukwa!',
+  soccerRating3: '🔥 Ohepa nawa!',
+  soccerRating2: '👍 Ita iihela!',
+  soccerRating1: '💪 Tya piti nokupractise!',
+  soccerRating0: '😅 Omupilisi wa hupitha omanga!',
 }
 
 // Khoekhoegowab translations — reviewed for accuracy where possible.
@@ -284,11 +460,53 @@ const khoe: T = {
   sessionComplete: 'ǀHui nawa ge ǀgao ǀhui!',
   encouragement: 'ǁNâ tama ǀhui ǀgâi ǀgâi oalaga.',
   newSession: 'ǀHui ǀGâi Tama',
+  keepLearning: 'ǁNâ tama kale',
 
   lessonUnavailable: 'ǀHui ǀGâi ǀHole',
   lessonError: 'ǀHui ǀgâi load ǀkae. ǀGumwe kale.',
   tryAgain: 'ǀGumwe Kale',
   goBack: 'ǀGao',
+
+  playAgain: 'ǀGao ǀGumwe',
+  points: 'ǀhui',
+  menu: 'ǀHui',
+
+  pairsWord: 'ǀhui-ǀhui',
+  attemptsWord: 'ǀgao',
+
+  tapLettersBelow: 'ǀGui ǀhui ǀkae…',
+  hintBtn: 'ǀHui',
+  checkBtn: 'ǀGao',
+  skipBtn: 'ǁNâ',
+  correctMsg: '✅ ǀHui nawa!',
+  wrongMsg: '❌ ǀGumwe kale',
+
+  timesUp: '⏱ ǀKhâu ǀgao! ǀGaos: {answer}',
+
+  trueBtn: '✅ ǀHUI',
+  falseBtn: '❌ ǀKAE',
+  timesUpWas: '⏱ ǀKhâu ǀgao! ǀGaos laali: {answer}',
+
+  balloonsLeft: '{n} 🎈 ǀkae',
+  wordWas: '💨 ǀGao! ǀHui laali: {word}',
+  pointsEarned: '🎈 +{n} ǀhui!',
+
+  noSoccerTokens: 'ǀHui ǀgai ǀgao ǀgumwe!',
+  soccerTokenEarned: '⚽ ǀGao ǀgumwe ǀhui!',
+
+  swipeToShoot: 'ǀGui ǀhui ǀkae ǀgao',
+  goalMsg: 'GOAL! 🎉',
+  savedMsg: 'ǀGAO! 🧤',
+  missMsg: 'ǀKAE!',
+  wideMsg: 'ǀNAMA!',
+  overBarMsg: 'ǀGÂI ǀKAE!',
+  goalsScored: 'ǀhui ǀgao',
+  soccerRating5: '🏆 ǀHui nawa nawa!',
+  soccerRating4: '⭐ ǀHui ǀGâi!',
+  soccerRating3: '🔥 ǀHui nawa!',
+  soccerRating2: '👍 ǀHui!',
+  soccerRating1: '💪 ǁNâ tama kale!',
+  soccerRating0: '😅 ǀGao ǁnâ tama!',
 }
 
 export const translations: Record<Language, T> = {

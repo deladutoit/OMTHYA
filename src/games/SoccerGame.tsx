@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react'
 import * as Phaser from 'phaser'
 import { SoccerScene } from './soccer/SoccerScene'
+import type { Language } from '../types'
 
 interface Props {
+  language: Language
   onBack: () => void
 }
 
-export function SoccerGame({ onBack }: Props) {
+export function SoccerGame({ language, onBack }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const gameRef      = useRef<Phaser.Game | null>(null)
 
@@ -32,6 +34,7 @@ export function SoccerGame({ onBack }: Props) {
     // Registry is read in scene.create() which fires on next animation frame,
     // so this assignment is always safe.
     game.registry.set('onBack', onBack)
+    game.registry.set('language', language)
     gameRef.current = game
 
     return () => {

@@ -176,7 +176,7 @@ export function Hangman({ language, onComplete, onBack }: Props) {
               : t(language, 'keepPractising')}
           </h1>
           <p className="text-xl text-gray-500 mb-2">
-            {score} / {maxScore} points
+            {score} / {maxScore} {t(language, 'points')}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-4 mb-8">
             <div
@@ -191,7 +191,7 @@ export function Hangman({ language, onComplete, onBack }: Props) {
               onClick={handleRestart}
               className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xl font-semibold py-4 rounded-2xl transition-colors"
             >
-              <RotateCcw size={22} /> Play Again
+              <RotateCcw size={22} /> {t(language, 'playAgain')}
             </button>
             <button
               onClick={() => onComplete(Math.max(10, pct))}
@@ -245,7 +245,7 @@ export function Hangman({ language, onComplete, onBack }: Props) {
                 remaining <= 2 ? 'text-red-500 animate-pulse' : 'text-gray-500'
               }`}
             >
-              {remaining} 🎈 left
+              {t(language, 'balloonsLeft', { n: remaining.toString() })}
             </span>
           </div>
         </div>
@@ -293,8 +293,8 @@ export function Hangman({ language, onComplete, onBack }: Props) {
             }`}
           >
             {wordResult === 'won'
-              ? `🎈 +${Math.max(0, 10 - wrongCount)} points!`
-              : `💨 All popped! The word was: ${word}`}
+              ? t(language, 'pointsEarned', { n: String(Math.max(0, 10 - wrongCount)) })
+              : t(language, 'wordWas', { word })}
           </div>
         )}
 
