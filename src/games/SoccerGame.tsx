@@ -21,18 +21,15 @@ export function SoccerGame({ language, onBack }: Props) {
       backgroundColor: '#0ea5e9',
       scene: [SoccerScene],
       scale: {
-        mode: Phaser.Scale.FIT,
+        // RESIZE makes the canvas fill the parent div at native resolution,
+        // so the scene always has access to the real viewport dimensions.
+        mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 400,
-        height: 600,
       },
-      // Disable right-click context menu on canvas
       disableContextMenu: true,
     }
 
     const game = new Phaser.Game(config)
-    // Registry is read in scene.create() which fires on next animation frame,
-    // so this assignment is always safe.
     game.registry.set('onBack', onBack)
     game.registry.set('language', language)
     gameRef.current = game
@@ -53,7 +50,7 @@ export function SoccerGame({ language, onBack }: Props) {
         alignItems: 'center',
         justifyContent: 'center',
         background: '#000',
-        touchAction: 'none',   // prevent browser scroll during swipe
+        touchAction: 'none',
       }}
     />
   )

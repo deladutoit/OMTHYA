@@ -2,587 +2,363 @@ import * as Phaser from 'phaser'
 import { t } from '../../lib/translations'
 import type { Language } from '../../types'
 
-// ─── Scene dimensions ───────────────────────────────────────────────────────
-const W = 400
-const H = 600
+// ─── Game settings ───────────────────────────────────────────────────────────
+const WINNING_SCORE    = 5
+const BASE_SPD_FACTOR  = 0.007   // H × this = initial ball speed (px/frame)
+const SPEED_BUMP       = 1.10    // speed multiplier on each paddle hit (no cap)
+const AI_SPEED_RATIO   = 0.82    // AI max speed as fraction of ball speed (beatable)
 
-// ─── Goal (screen-space) ────────────────────────────────────────────────────
-const GOAL_L = 105
-const GOAL_R = 295
-const GOAL_T = 105
-const GOAL_B = 180
-const GOAL_W = GOAL_R - GOAL_L
-const GOAL_H = GOAL_B - GOAL_T
+// ── helpers ──────────────────────────────────────────────────────────────────
+function fmtPx(n: number, scale: number) { return `${Math.round(n * Math.max(scale, 0.5))}px` }
 
-// ─── Ball ───────────────────────────────────────────────────────────────────
-const BALL_X0 = W / 2
-const BALL_Y0 = 490
-const R_NEAR  = 30   // radius at penalty spot
-const R_FAR   = 7    // radius when inside goal
-
-// ─── Perspective ────────────────────────────────────────────────────────────
-const NEAR_Y  = BALL_Y0
-const FAR_Y   = GOAL_B
-
-// ─── Keeper ─────────────────────────────────────────────────────────────────
-const KP_W    = 46
-const KP_H    = 50
-const KP_CY   = GOAL_T + GOAL_H * 0.28   // top-y of keeper body
-const KP_CX0  = W / 2                    // centre-x start
-
-// ─── Game settings ──────────────────────────────────────────────────────────
-const SHOTS_TOTAL = 5
-const GRAVITY     = 0.14
-const SPIN_DRIFT  = 0.022
-
-type Phase = 'ready' | 'swiping' | 'flying' | 'result' | 'done'
-
-// ── helpers ─────────────────────────────────────────────────────────────────
-function lerp(a: number, b: number, t: number) { return a + (b - a) * t }
-function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
-
-function perspScale(y: number) {
-  return clamp(0.18 + 0.82 * ((y - FAR_Y) / (NEAR_Y - FAR_Y)), 0.12, 1)
-}
-
-// ── SoccerScene ──────────────────────────────────────────────────────────────
+// ── SoccerPongScene ───────────────────────────────────────────────────────────
 export class SoccerScene extends Phaser.Scene {
-  // Language
   private lang: Language = 'english'
 
-  // State
-  private phase: Phase = 'ready'
-  private shots  = 0
-  private goals  = 0
-  private evaluated = false   // prevent multi-eval per shot
+  // Canvas
+  private W = 800
+  private H = 600
+  private fs = 1
 
-  // Swipe
-  private swipeStart: { x: number; y: number; time: number } | null = null
-  private swipePoints: { x: number; y: number; time: number }[] = []
+  // Layout constants (computed in create)
+  private PADDLE_W = 0
+  private PADDLE_H = 0
+  private PLAYER_Y = 0   // y-centre of player (bottom) paddle
+  private AI_Y     = 0   // y-centre of AI (top) paddle
+  private BALL_R   = 0
 
-  // Ball physics
-  private bx    = BALL_X0
-  private by    = BALL_Y0
-  private bvx   = 0
-  private bvy   = 0
-  private bspin = 0
-  private bScale = 1
+  // Game state
+  private playerX    = 0
+  private aiX        = 0
+  private ballX      = 0
+  private ballY      = 0
+  private ballVX     = 0
+  private ballVY     = 0
+  private ballSpeed  = 0
+  private playerScore = 0
+  private aiScore     = 0
+  private phase: 'playing' | 'paused' | 'done' = 'playing'
 
-  // Keeper
-  private kCX   = KP_CX0    // current centre-x
-  private kTCX  = KP_CX0    // target centre-x
-  private kLean = 0          // lean angle for dive animation (-1 left, 1 right)
-
-  // Graphics layers
-  private gField!:  Phaser.GameObjects.Graphics
-  private gGoal!:   Phaser.GameObjects.Graphics
-  private gKeeper!: Phaser.GameObjects.Graphics
-  private gBall!:   Phaser.GameObjects.Graphics
-  private gFX!:     Phaser.GameObjects.Graphics   // swipe arrow, power bar
+  // Graphics
+  private gField!:   Phaser.GameObjects.Graphics
+  private gPaddles!: Phaser.GameObjects.Graphics
+  private gBall!:    Phaser.GameObjects.Graphics
 
   // Text
-  private txtGoals!:   Phaser.GameObjects.Text
-  private txtShot!:    Phaser.GameObjects.Text
-  private txtHint!:    Phaser.GameObjects.Text
-  private txtResult!:  Phaser.GameObjects.Text
-
+  private txtScore!:  Phaser.GameObjects.Text
+  private txtResult!: Phaser.GameObjects.Text
 
   constructor() { super({ key: 'SoccerScene' }) }
 
-  // ── Lifecycle ──────────────────────────────────────────────────────────────
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
   create() {
     this.lang = (this.registry.get('language') as Language) ?? 'english'
 
-    // Graphics layers (z-order matters)
-    this.gField  = this.add.graphics()
-    this.gGoal   = this.add.graphics()
-    this.gKeeper = this.add.graphics()
-    this.gBall   = this.add.graphics()
-    this.gFX     = this.add.graphics()
+    this.W  = this.scale.width  || 800
+    this.H  = this.scale.height || 600
+    this.fs = Math.min(this.W / 800, this.H / 600)
+
+    // Layout
+    this.PADDLE_W = this.W * 0.11
+    this.PADDLE_H = Math.max(8, this.H * 0.014)
+    this.PLAYER_Y = this.H * 0.88
+    this.AI_Y     = this.H * 0.12
+    this.BALL_R   = Math.min(this.W, this.H) * 0.026
+
+    // Starting positions
+    this.playerX = this.W / 2
+    this.aiX     = this.W / 2
+    this.resetBall()
+
+    // Graphics layers
+    this.gField   = this.add.graphics()
+    this.gPaddles = this.add.graphics()
+    this.gBall    = this.add.graphics()
+
+    const f = (n: number) => fmtPx(n, this.fs)
 
     // Back button
-    this.add.text(14, 20, `← ${t(this.lang, 'back')}`, {
-      fontSize: '18px', color: '#fff',
-      stroke: '#000', strokeThickness: 2,
+    this.add.text(this.W * 0.025, this.H * 0.025, `← ${t(this.lang, 'back')}`, {
+      fontSize: f(18), color: '#fff', stroke: '#000', strokeThickness: 2,
     }).setInteractive({ useHandCursor: true })
       .on('pointerdown', () => {
         const cb = this.registry.get('onBack') as (() => void) | undefined
         cb?.()
       })
 
-    // Goals counter
-    this.txtGoals = this.add.text(W / 2, 22, '⚽  0', {
-      fontSize: '26px', fontStyle: 'bold', color: '#fff',
-      stroke: '#000', strokeThickness: 3,
-    }).setOrigin(0.5, 0.5)
+    // Score (centre, semi-transparent so it doesn't distract)
+    this.txtScore = this.add.text(this.W / 2, this.H / 2, '0  –  0', {
+      fontSize: f(38), fontStyle: 'bold', color: '#ffffff',
+      stroke: '#000', strokeThickness: 4, align: 'center',
+    }).setOrigin(0.5).setAlpha(0.45)
 
-    // Shot counter
-    this.txtShot = this.add.text(W - 14, 22, '1 / 5', {
-      fontSize: '17px', color: '#fff',
-      stroke: '#000', strokeThickness: 2,
-    }).setOrigin(1, 0.5)
-
-    // Hint text
-    this.txtHint = this.add.text(W / 2, H - 58, t(this.lang, 'swipeToShoot'), {
-      fontSize: '17px', fontStyle: 'bold', color: '#ffff00',
-      stroke: '#000', strokeThickness: 3,
-    }).setOrigin(0.5)
-
-    // Result overlay
-    this.txtResult = this.add.text(W / 2, H * 0.44, '', {
-      fontSize: '54px', fontStyle: 'bold', color: '#fff',
-      stroke: '#000', strokeThickness: 6,
+    // Goal / result announcement
+    this.txtResult = this.add.text(this.W / 2, this.H / 2, '', {
+      fontSize: f(64), fontStyle: 'bold', color: '#fff',
+      stroke: '#000', strokeThickness: 8, align: 'center',
     }).setOrigin(0.5).setVisible(false)
 
-    // Input
-    this.input.on('pointerdown', this.onDown,  this)
-    this.input.on('pointermove', this.onMove,  this)
-    this.input.on('pointerup',   this.onUp,    this)
+    // Controls — finger/mouse moves bottom paddle
+    this.input.on('pointerdown', (ptr: Phaser.Input.Pointer) => this.movePaddle(ptr.x))
+    this.input.on('pointermove', (ptr: Phaser.Input.Pointer) => {
+      if (ptr.isDown) this.movePaddle(ptr.x)
+    })
+
+    // Restart on orientation change
+    this.scale.on('resize', () => { this.scene.restart() }, this)
   }
 
   update() {
-    if (this.phase === 'flying') this.stepPhysics()
-    this.stepKeeper()
+    if (this.phase !== 'playing') return
+    this.stepBall()
+    this.stepAI()
     this.redrawAll()
   }
 
-  // ── Physics ────────────────────────────────────────────────────────────────
-  private stepPhysics() {
-    this.bvy  += GRAVITY
-    this.bvx  += this.bspin * SPIN_DRIFT
-    this.bx   += this.bvx
-    this.by   += this.bvy
-    this.bScale = perspScale(this.by)
+  // ── Input ─────────────────────────────────────────────────────────────────
+  private movePaddle(x: number) {
+    const half = this.PADDLE_W / 2
+    this.playerX = Phaser.Math.Clamp(x, half, this.W - half)
+  }
 
-    if (this.evaluated) return
+  // ── Ball ──────────────────────────────────────────────────────────────────
+  private resetBall() {
+    this.ballX     = this.W / 2
+    this.ballY     = this.H / 2
+    this.ballSpeed = this.H * BASE_SPD_FACTOR
+    const angle    = (Math.random() * 50 - 25) * (Math.PI / 180)
+    const dir      = Math.random() > 0.5 ? 1 : -1
+    this.ballVX    = Math.sin(angle) * this.ballSpeed
+    this.ballVY    = dir * Math.cos(angle) * this.ballSpeed
+  }
 
-    // Ball has reached the goal area
-    if (this.by <= GOAL_B + 4) {
-      this.evaluated = true
+  private stepBall() {
+    this.ballX += this.ballVX
+    this.ballY += this.ballVY
 
-      const inPost = this.bx >= GOAL_L && this.bx <= GOAL_R
-      const inBar  = this.by >= GOAL_T && this.by <= GOAL_B
-      const hitPost = Math.abs(this.bx - GOAL_L) < 6 || Math.abs(this.bx - GOAL_R) < 6
-      const hitBar  = Math.abs(this.by - GOAL_T) < 6
-
-      if (hitPost || hitBar) {
-        // Post / bar clang — bounce then miss
-        this.cameras.main.shake(180, 0.006)
-        this.bvx *= -0.5
-        this.bvy  = Math.abs(this.bvy) * 0.4
-        this.evaluated = false   // re-evaluate after bounce
-        return
-      }
-
-      if (inPost && inBar) {
-        // Inside goal — check keeper reach
-        const kReach = KP_W * 0.72
-        if (Math.abs(this.bx - this.kCX) < kReach) {
-          this.onResult(false, t(this.lang, 'savedMsg'))
-        } else {
-          this.goals++
-          this.onResult(true, t(this.lang, 'goalMsg'))
-        }
-      } else if (!inPost) {
-        this.onResult(false, t(this.lang, 'wideMsg'))
-      } else {
-        this.onResult(false, t(this.lang, 'overBarMsg'))
-      }
+    // Side walls
+    if (this.ballX - this.BALL_R < 0) {
+      this.ballX  = this.BALL_R
+      this.ballVX = Math.abs(this.ballVX)
+    } else if (this.ballX + this.BALL_R > this.W) {
+      this.ballX  = this.W - this.BALL_R
+      this.ballVX = -Math.abs(this.ballVX)
     }
 
-    // Ball left screen without hitting goal area
-    if (this.by < GOAL_T - 80 || this.bx < -60 || this.bx > W + 60) {
-      if (!this.evaluated) { this.evaluated = true; this.onResult(false, t(this.lang, 'missMsg')) }
+    // Player paddle (bottom — ball moving downward)
+    if (this.ballVY > 0
+      && this.ballY + this.BALL_R >= this.PLAYER_Y - this.PADDLE_H / 2
+      && this.ballY - this.BALL_R <= this.PLAYER_Y + this.PADDLE_H / 2
+      && this.ballX > this.playerX - this.PADDLE_W / 2 - this.BALL_R
+      && this.ballX < this.playerX + this.PADDLE_W / 2 + this.BALL_R) {
+      this.bounce(this.playerX, this.PLAYER_Y - this.PADDLE_H / 2 - this.BALL_R, -1)
+    }
+
+    // AI paddle (top — ball moving upward)
+    if (this.ballVY < 0
+      && this.ballY - this.BALL_R <= this.AI_Y + this.PADDLE_H / 2
+      && this.ballY + this.BALL_R >= this.AI_Y - this.PADDLE_H / 2
+      && this.ballX > this.aiX - this.PADDLE_W / 2 - this.BALL_R
+      && this.ballX < this.aiX + this.PADDLE_W / 2 + this.BALL_R) {
+      this.bounce(this.aiX, this.AI_Y + this.PADDLE_H / 2 + this.BALL_R, 1)
+    }
+
+    // Scoring — ball past a paddle
+    if (this.ballY - this.BALL_R > this.H) {
+      this.aiScore++
+      this.onGoal(false)
+    } else if (this.ballY + this.BALL_R < 0) {
+      this.playerScore++
+      this.onGoal(true)
     }
   }
 
-  // ── Keeper AI ──────────────────────────────────────────────────────────────
-  private launchKeeper(bvx: number, bvy: number, spin: number) {
-    // Estimate ball X when it crosses GOAL_B
-    const frames = Math.abs((this.by - GOAL_B) / bvy)
-    let predX = this.bx
-    let predVX = bvx
-    let predSpin = spin
-    for (let f = 0; f < frames; f++) {
-      predVX   += predSpin * SPIN_DRIFT
-      predX    += predVX
+  private bounce(paddleX: number, newBallY: number, dir: 1 | -1) {
+    this.ballY    = newBallY
+    this.ballSpeed = this.ballSpeed * SPEED_BUMP
+    const offset   = Phaser.Math.Clamp((this.ballX - paddleX) / (this.PADDLE_W / 2), -1, 1)
+    const maxAngle = 65 * (Math.PI / 180)
+    const angle    = offset * maxAngle
+    this.ballVX    = Math.sin(angle) * this.ballSpeed
+    this.ballVY    = dir * Math.cos(angle) * this.ballSpeed
+  }
+
+  // ── AI ────────────────────────────────────────────────────────────────────
+  private stepAI() {
+    // Track ball when it moves toward AI; drift back to centre otherwise
+    const targetX = this.ballVY < 0 ? this.ballX : this.W / 2
+    const diff     = targetX - this.aiX
+    const maxMove  = this.ballSpeed * AI_SPEED_RATIO
+    if (Math.abs(diff) > 1) {
+      this.aiX += Math.sign(diff) * Math.min(Math.abs(diff), maxMove)
     }
-    // Add imperfect reaction (harder shots = more error)
-    const speed = Math.sqrt(bvx * bvx + bvy * bvy)
-    const error = (Math.random() - 0.5) * clamp(speed * 5, 20, 70)
-    this.kTCX = clamp(predX + error, GOAL_L + KP_W / 2, GOAL_R - KP_W / 2)
-    this.kLean = this.kTCX > this.kCX ? 1 : -1
+    this.aiX = Phaser.Math.Clamp(this.aiX, this.PADDLE_W / 2, this.W - this.PADDLE_W / 2)
   }
 
-  private stepKeeper() {
-    const speed = this.phase === 'flying' ? 0.16 : 0.08
-    this.kCX = lerp(this.kCX, this.kTCX, speed)
-  }
+  // ── Goal scored ───────────────────────────────────────────────────────────
+  private onGoal(playerScored: boolean) {
+    this.phase = 'paused'
+    this.txtScore.setText(`${this.playerScore}  –  ${this.aiScore}`)
 
-  // ── Input ──────────────────────────────────────────────────────────────────
-  private onDown(ptr: Phaser.Input.Pointer) {
-    if (this.phase !== 'ready') return
-    // Require swipe to start in lower portion of screen (near ball)
-    if (ptr.y < H * 0.55) return
-    this.phase = 'swiping'
-    this.swipeStart = { x: ptr.x, y: ptr.y, time: ptr.time }
-    this.swipePoints = [{ x: ptr.x, y: ptr.y, time: ptr.time }]
-  }
-
-  private onMove(ptr: Phaser.Input.Pointer) {
-    if (this.phase !== 'swiping') return
-    this.swipePoints.push({ x: ptr.x, y: ptr.y, time: ptr.time })
-    // Keep only recent points for velocity calc
-    if (this.swipePoints.length > 12) this.swipePoints.shift()
-  }
-
-  private onUp(ptr: Phaser.Input.Pointer) {
-    if (this.phase !== 'swiping' || !this.swipeStart) return
-
-    const dx  = ptr.x - this.swipeStart.x
-    const dy  = this.swipeStart.y - ptr.y   // positive = upward
-    const dt  = Math.max(ptr.time - this.swipeStart.time, 30)
-
-    this.swipeStart = null
-
-    if (dy < 30) { this.phase = 'ready'; return }
-
-    // Velocity from recent swipe segment
-    const recent = this.swipePoints.slice(-4)
-    const rdx = recent.length > 1 ? recent[recent.length - 1].x - recent[0].x : dx
-    const rdy = recent.length > 1 ? recent[0].y - recent[recent.length - 1].y : dy
-    const rdt = recent.length > 1 ? recent[recent.length - 1].time - recent[0].time : dt
-
-    const speed = Math.sqrt(rdx * rdx + rdy * rdy) / Math.max(rdt, 15)
-
-    // Power: maps swipe speed to ball velocity magnitude
-    const power = clamp(speed * 10, 4, 22)
-
-    // Direction: mostly upward, with horizontal aim from swipe angle
-    const norm = Math.sqrt(rdx * rdx + rdy * rdy) || 1
-    const bvx  = (rdx / norm) * power * 0.55
-    const bvy  = -(rdy / norm) * power
-
-    // Spin: detect curve from path (compare first half vs second half of swipe)
-    const mid = Math.floor(this.swipePoints.length / 2)
-    let spin = 0
-    if (this.swipePoints.length >= 4) {
-      const firstHalf  = this.swipePoints.slice(0, mid)
-      const secondHalf = this.swipePoints.slice(mid)
-      const fAngle = Math.atan2(firstHalf[0].y - firstHalf[firstHalf.length - 1].y,
-                                firstHalf[firstHalf.length - 1].x - firstHalf[0].x)
-      const sAngle = Math.atan2(secondHalf[0].y - secondHalf[secondHalf.length - 1].y,
-                                secondHalf[secondHalf.length - 1].x - secondHalf[0].x)
-      spin = clamp((sAngle - fAngle) * 1.8, -1.4, 1.4)
-    }
-
-    this.shoot(bvx, bvy, spin)
-  }
-
-  private shoot(bvx: number, bvy: number, spin: number) {
-    this.bvx    = bvx
-    this.bvy    = bvy
-    this.bspin  = spin
-    this.phase  = 'flying'
-    this.evaluated = false
-    this.txtHint.setVisible(false)
-    this.launchKeeper(bvx, bvy, spin)
-  }
-
-  // ── Result ─────────────────────────────────────────────────────────────────
-  private onResult(isGoal: boolean, msg: string) {
-    if (this.phase === 'result' || this.phase === 'done') return
-    this.phase = 'result'
-    this.shots++
-
-    this.txtGoals.setText(`⚽  ${this.goals}`)
-    this.txtShot.setText(`${Math.min(this.shots + 1, SHOTS_TOTAL)} / ${SHOTS_TOTAL}`)
-
-    this.txtResult.setText(msg)
+    this.txtResult.setText(t(this.lang, 'goalMsg'))
     this.txtResult.setStyle({
-      stroke: isGoal ? '#16a34a' : '#7f1d1d',
-      color: isGoal ? '#bbf7d0' : '#fecaca',
+      color:  playerScored ? '#bbf7d0' : '#fecaca',
+      stroke: playerScored ? '#16a34a' : '#7f1d1d',
     })
     this.txtResult.setVisible(true)
 
-    if (isGoal) {
-      this.cameras.main.flash(350, 0, 160, 0, false)
+    if (playerScored) {
+      this.cameras.main.flash(300, 0, 160, 0, false)
     } else {
-      this.cameras.main.shake(240, 0.006)
+      this.cameras.main.shake(220, 0.005)
     }
 
-    this.time.delayedCall(2400, () => {
+    const done = this.playerScore >= WINNING_SCORE || this.aiScore >= WINNING_SCORE
+
+    this.time.delayedCall(1400, () => {
       this.txtResult.setVisible(false)
-      if (this.shots >= SHOTS_TOTAL) {
+      if (done) {
         this.showEnd()
       } else {
-        this.resetShot()
+        this.resetBall()
+        this.playerX = this.W / 2
+        this.aiX     = this.W / 2
+        this.phase   = 'playing'
       }
     })
   }
 
-  private resetShot() {
-    this.bx = BALL_X0; this.by = BALL_Y0
-    this.bvx = 0; this.bvy = 0; this.bspin = 0; this.bScale = 1
-    this.kCX = KP_CX0; this.kTCX = KP_CX0; this.kLean = 0
-    this.evaluated = false
-    this.phase = 'ready'
-    this.txtHint.setVisible(true)
-    this.txtShot.setText(`${this.shots + 1} / ${SHOTS_TOTAL}`)
-  }
-
+  // ── End screen ────────────────────────────────────────────────────────────
   private showEnd() {
     this.phase = 'done'
-    const g = this.goals
-    const ratingKey = g === 5 ? 'soccerRating5' : g >= 4 ? 'soccerRating4' : g >= 3 ? 'soccerRating3' : g >= 2 ? 'soccerRating2' : g >= 1 ? 'soccerRating1' : 'soccerRating0'
-    const line1 = t(this.lang, ratingKey)
-    const line2 = `${g} / ${SHOTS_TOTAL} ${t(this.lang, 'goalsScored')}`
+    const won = this.playerScore >= WINNING_SCORE
+    const f   = (n: number) => fmtPx(n, this.fs)
 
-    this.txtResult.setText(`${line1}\n${line2}`)
+    const ratingKey = won ? 'soccerRating5' : 'soccerRating0'
+    this.txtResult.setText(`${t(this.lang, ratingKey)}\n${this.playerScore} – ${this.aiScore}`)
     this.txtResult.setStyle({
-      fontSize: '40px', color: '#fff', stroke: '#000', strokeThickness: 5, align: 'center',
+      fontSize:        f(44),
+      color:           won ? '#bbf7d0' : '#fecaca',
+      stroke:          won ? '#16a34a' : '#7f1d1d',
+      strokeThickness: 6,
+      align:           'center',
     })
     this.txtResult.setVisible(true)
 
-    // Play Again
-    this.add.text(W / 2, H * 0.64, `▶  ${t(this.lang, 'playAgain')}`, {
-      fontSize: '22px', fontStyle: 'bold', color: '#fff',
-      backgroundColor: '#16a34a', padding: { x: 22, y: 14 },
+    this.add.text(this.W / 2, this.H * 0.67, `▶  ${t(this.lang, 'playAgain')}`, {
+      fontSize: f(22), fontStyle: 'bold', color: '#fff',
+      backgroundColor: '#16a34a', padding: { x: 24, y: 14 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => {
-        this.scene.restart()
-      })
+      .on('pointerdown', () => { this.scene.restart() })
   }
 
-  // ── Rendering ──────────────────────────────────────────────────────────────
+  // ── Rendering ─────────────────────────────────────────────────────────────
   private redrawAll() {
     this.drawField()
-    this.drawGoal()
-    this.drawKeeper()
+    this.drawPaddles()
     this.drawBall()
-    this.drawFX()
   }
 
   private drawField() {
     const g = this.gField
     g.clear()
+    const { W, H } = this
 
-    // Sky (simulated gradient with bands)
-    const skyBands = [0x0ea5e9, 0x38bdf8, 0x7dd3fc, 0xbae6fd]
-    const bandH = (H * 0.48) / skyBands.length
-    skyBands.forEach((c, i) => {
-      g.fillStyle(c); g.fillRect(0, i * bandH, W, bandH + 1)
-    })
-
-    // Clouds
-    const clouds = [[70, 50, 28], [220, 38, 22], [330, 60, 18], [150, 28, 14]] as const
-    g.fillStyle(0xffffff, 0.88)
-    clouds.forEach(([cx, cy, r]) => {
-      g.fillEllipse(cx, cy, r * 3, r * 1.2)
-      g.fillEllipse(cx - r * 0.7, cy + 3, r * 1.8, r)
-      g.fillEllipse(cx + r * 0.7, cy + 3, r * 1.8, r)
-    })
-
-    // Pitch gradient bands
-    const pitchTop = H * 0.48
-    const pitchColors = [0x16a34a, 0x15803d, 0x166534, 0x14532d]
-    const pBandH = (H - pitchTop) / pitchColors.length
-    pitchColors.forEach((c, i) => {
-      g.fillStyle(c); g.fillRect(0, pitchTop + i * pBandH, W, pBandH + 1)
-    })
-
-    // Pitch stripe overlay
-    for (let i = 0; i < 5; i++) {
-      g.fillStyle(0x000000, 0.04)
-      g.fillRect(0, pitchTop + i * 30, W, 15)
-    }
-
-    // Vanishing-point perspective lines
-    const vx = W / 2, vy = H * 0.44
-    g.lineStyle(1.5, 0xffffff, 0.22)
-    g.lineBetween(0, H, vx, vy)
-    g.lineBetween(W, H, vx, vy)
-
-    // Penalty box
-    const pbL = W * 0.14, pbR = W * 0.86, pbT = GOAL_B, pbBot = H * 0.86
-    g.lineStyle(1.8, 0xffffff, 0.3)
-    g.strokeRect(pbL, pbT, pbR - pbL, pbBot - pbT)
-
-    // 6-yard box
-    const sbL = W * 0.3, sbR = W * 0.7, sbT = GOAL_B, sbBot = GOAL_B + 44
-    g.lineStyle(1.2, 0xffffff, 0.2)
-    g.strokeRect(sbL, sbT, sbR - sbL, sbBot - sbT)
-
-    // Penalty arc
-    g.lineStyle(1.5, 0xffffff, 0.25)
-    g.beginPath()
-    g.arc(W / 2, BALL_Y0 + 16, 72, Phaser.Math.DegToRad(200), Phaser.Math.DegToRad(340))
-    g.strokePath()
-
-    // Penalty spot
-    g.fillStyle(0xffffff, 0.55)
-    g.fillCircle(W / 2, BALL_Y0 + 16, 4)
-
-    // Goal line
-    g.lineStyle(2, 0xffffff, 0.5)
-    g.lineBetween(0, GOAL_B, W, GOAL_B)
-  }
-
-  private drawGoal() {
-    const g = this.gGoal
-    g.clear()
-
-    // Net shadow
-    g.fillStyle(0x000000, 0.12)
-    g.fillRect(GOAL_L - 2, GOAL_T, GOAL_W + 4, GOAL_H + 8)
-
-    // Net fill
-    g.fillStyle(0x000000, 0.22)
-    g.fillRect(GOAL_L, GOAL_T, GOAL_W, GOAL_H)
-
-    // Net grid
-    const cols = 12, rows = 6
-    g.lineStyle(0.7, 0xffffff, 0.35)
-    for (let c = 0; c <= cols; c++) {
-      g.lineBetween(GOAL_L + (GOAL_W / cols) * c, GOAL_T,
-                    GOAL_L + (GOAL_W / cols) * c, GOAL_B)
-    }
-    for (let r = 0; r <= rows; r++) {
-      g.lineBetween(GOAL_L, GOAL_T + (GOAL_H / rows) * r,
-                    GOAL_R, GOAL_T + (GOAL_H / rows) * r)
-    }
-
-    // Posts (with 3D depth shading)
-    const postW = 8
-    // Left post front face
-    g.fillStyle(0xffffff); g.fillRect(GOAL_L - postW, GOAL_T - postW, postW, GOAL_H + postW)
-    g.fillStyle(0xd1d5db); g.fillRect(GOAL_L - postW, GOAL_T - postW, 2, GOAL_H + postW)
-    // Right post front face
-    g.fillStyle(0xffffff); g.fillRect(GOAL_R, GOAL_T - postW, postW, GOAL_H + postW)
-    g.fillStyle(0xd1d5db); g.fillRect(GOAL_R + postW - 2, GOAL_T - postW, 2, GOAL_H + postW)
-    // Crossbar
-    g.fillStyle(0xffffff); g.fillRect(GOAL_L - postW, GOAL_T - postW, GOAL_W + postW * 2, postW)
-    g.fillStyle(0xd1d5db); g.fillRect(GOAL_L - postW, GOAL_T - postW, GOAL_W + postW * 2, 2)
-  }
-
-  private drawKeeper() {
-    const g = this.gKeeper
-    g.clear()
-
-    const kx = this.kCX - KP_W / 2
-    const ky = KP_CY
-
-    // Lean matrix: when diving, keeper tilts
-    const lean = this.kLean * (this.phase === 'flying' ? 0.35 : 0.08)
-
-    // Draw in local coords with a lean transform approximation:
-    // We'll just skew the rectangle horizontally using draw calls
-    const skew = lean * KP_H * 0.4  // horizontal offset at top vs bottom
-
-    // Body (jersey - yellow/amber)
-    g.fillStyle(0xf59e0b)
-    g.fillTriangle(
-      kx + skew, ky,           kx + KP_W + skew, ky,
-      kx + KP_W, ky + KP_H)
-    g.fillTriangle(
-      kx + skew, ky,           kx, ky + KP_H,
-      kx + KP_W, ky + KP_H)
-
-    // Jersey stripes
-    g.lineStyle(1.5, 0xfbbf24, 0.6)
-    g.lineBetween(kx + KP_W * 0.3 + skew * 0.5, ky + 4, kx + KP_W * 0.3, ky + KP_H - 4)
-    g.lineBetween(kx + KP_W * 0.7 + skew * 0.5, ky + 4, kx + KP_W * 0.7, ky + KP_H - 4)
-
-    // Head
-    g.fillStyle(0xfde68a)
-    g.fillCircle(this.kCX + skew * 0.5, ky - 14, 13)
-
-    // Eyes
-    g.fillStyle(0x374151)
-    g.fillCircle(this.kCX - 4 + skew * 0.5, ky - 17, 2.5)
-    g.fillCircle(this.kCX + 4 + skew * 0.5, ky - 17, 2.5)
-
-    // Gloves
+    // Base pitch
     g.fillStyle(0x16a34a)
-    g.fillCircle(kx - 9 + skew * 0.3, ky + KP_H * 0.38, 9)
-    g.fillCircle(kx + KP_W + 9 + skew * 0.3, ky + KP_H * 0.38, 9)
+    g.fillRect(0, 0, W, H)
 
-    // Legs
-    g.fillStyle(0x1e3a5f)
-    g.fillRect(kx + 4, ky + KP_H, KP_W * 0.38, 14)
-    g.fillRect(kx + KP_W - 4 - KP_W * 0.38, ky + KP_H, KP_W * 0.38, 14)
+    // Alternating stripe overlay
+    const stripes = 10
+    const sh = H / stripes
+    for (let i = 0; i < stripes; i += 2) {
+      g.fillStyle(0x15803d, 0.55)
+      g.fillRect(0, i * sh, W, sh)
+    }
 
-    // Boots
-    g.fillStyle(0x111827)
-    g.fillRect(kx + 2, ky + KP_H + 14, KP_W * 0.42, 7)
-    g.fillRect(kx + KP_W - 2 - KP_W * 0.42, ky + KP_H + 14, KP_W * 0.42, 7)
+    // Halfway line
+    g.lineStyle(2, 0xffffff, 0.35)
+    g.lineBetween(0, H / 2, W, H / 2)
+
+    // Centre circle + spot
+    const cr = Math.min(W * 0.1, H * 0.12)
+    g.lineStyle(2, 0xffffff, 0.35)
+    g.strokeCircle(W / 2, H / 2, cr)
+    g.fillStyle(0xffffff, 0.5)
+    g.fillCircle(W / 2, H / 2, 4)
+
+    // Goal boxes
+    const gw = W * 0.35
+    const gx = (W - gw) / 2
+    const boxH = this.AI_Y + this.PADDLE_H * 1.5
+
+    // AI goal box (top, red tint)
+    g.fillStyle(0xef4444, 0.12)
+    g.fillRect(gx, 0, gw, boxH)
+    g.lineStyle(2, 0xffffff, 0.4)
+    g.strokeRect(gx, 0, gw, boxH)
+
+    // Player goal box (bottom, green tint)
+    const pyBoxT = this.PLAYER_Y - this.PADDLE_H * 1.5
+    g.fillStyle(0x22c55e, 0.12)
+    g.fillRect(gx, pyBoxT, gw, H - pyBoxT)
+    g.lineStyle(2, 0xffffff, 0.4)
+    g.strokeRect(gx, pyBoxT, gw, H - pyBoxT)
+  }
+
+  private drawPaddles() {
+    const g = this.gPaddles
+    g.clear()
+    const { PADDLE_W, PADDLE_H } = this
+
+    const paddle = (cx: number, cy: number, color: number) => {
+      const x = cx - PADDLE_W / 2
+      const y = cy - PADDLE_H / 2
+      const r = PADDLE_H / 2
+      // Drop shadow
+      g.fillStyle(0x000000, 0.22)
+      g.fillRoundedRect(x + 3, y + 4, PADDLE_W, PADDLE_H, r)
+      // Body
+      g.fillStyle(color)
+      g.fillRoundedRect(x, y, PADDLE_W, PADDLE_H, r)
+      // Highlight streak
+      g.fillStyle(0xffffff, 0.3)
+      g.fillRoundedRect(x + 5, y + 3, PADDLE_W - 10, PADDLE_H * 0.4, r * 0.7)
+      // Border
+      g.lineStyle(2, 0xffffff, 0.55)
+      g.strokeRoundedRect(x, y, PADDLE_W, PADDLE_H, r)
+    }
+
+    paddle(this.aiX,     this.AI_Y,     0xef4444)  // AI   — red
+    paddle(this.playerX, this.PLAYER_Y, 0x22c55e)  // You  — green
   }
 
   private drawBall() {
     const g = this.gBall
     g.clear()
+    const r = this.BALL_R
+    const bx = this.ballX, by = this.ballY
 
-    const r = clamp(R_NEAR * this.bScale, R_FAR, R_NEAR)
-    const bx = this.bx, by = this.by
+    // Shadow
+    g.fillStyle(0x000000, 0.22)
+    g.fillEllipse(bx + r * 0.2, by + r * 0.35, r * 2.1, r * 1.2)
 
-    // Shadow (only near ground level)
-    if (this.bScale > 0.35) {
-      const shadowAlpha = clamp((this.bScale - 0.35) * 0.55, 0, 0.35)
-      g.fillStyle(0x000000, shadowAlpha)
-      g.fillEllipse(bx, by + r * 1.05, r * 2.4, r * 0.55)
-    }
-
-    // Main ball body
+    // Body
     g.fillStyle(0xffffff)
     g.fillCircle(bx, by, r)
-
-    // Outline
-    g.lineStyle(r * 0.09, 0x111111, 0.9)
+    g.lineStyle(r * 0.07, 0x111111, 0.85)
     g.strokeCircle(bx, by, r)
 
-    // Central pentagon
+    // Soccer patches
     g.fillStyle(0x111111)
     g.fillCircle(bx, by, r * 0.27)
-
-    // 5 surrounding patches
     for (let i = 0; i < 5; i++) {
       const ang = (i * 72 - 90) * (Math.PI / 180)
       g.fillCircle(bx + Math.cos(ang) * r * 0.6, by + Math.sin(ang) * r * 0.6, r * 0.18)
     }
 
     // Shine
-    g.fillStyle(0xffffff, 0.5)
-    g.fillCircle(bx - r * 0.3, by - r * 0.3, r * 0.22)
-  }
-
-  private drawFX() {
-    const g = this.gFX
-    g.clear()
-
-    if (this.phase === 'ready') {
-      // Pulsing ring around ball
-      const t = this.time.now * 0.003
-      const pulse = 0.4 + 0.35 * Math.sin(t)
-      g.lineStyle(2.5, 0xfbbf24, pulse)
-      g.strokeCircle(this.bx, this.by, R_NEAR + 12)
-
-      // Up arrow
-      const ax = W / 2, ay = this.by - R_NEAR - 18
-      const arrowPulse = 0.6 + 0.4 * Math.sin(t + 1)
-      g.lineStyle(3, 0xffff00, arrowPulse)
-      g.lineBetween(ax, ay, ax, ay - 38)
-      g.fillStyle(0xffff00, arrowPulse)
-      g.fillTriangle(ax, ay - 52, ax - 9, ay - 38, ax + 9, ay - 38)
-    }
-
-    if (this.phase === 'swiping' && this.swipePoints.length > 1) {
-      // Draw swipe trail
-      const pts = this.swipePoints
-      g.lineStyle(3, 0xfbbf24, 0.7)
-      g.beginPath()
-      g.moveTo(pts[0].x, pts[0].y)
-      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y)
-      g.strokePath()
-    }
+    g.fillStyle(0xffffff, 0.55)
+    g.fillCircle(bx - r * 0.28, by - r * 0.28, r * 0.22)
   }
 }
